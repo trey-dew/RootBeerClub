@@ -28,36 +28,7 @@ const ScorecardPage = () => {
 
   const criteria: ScorecardCriteria[] = [
     {
-      id: 'appearance',
-      name: 'Appearance',
-      description: 'Color, clarity, and head retention',
-      maxScore: 10
-    },
-    {
-      id: 'aroma',
-      name: 'Aroma',
-      description: 'Scent and fragrance intensity',
-      maxScore: 15
-    },
-    {
-      id: 'taste',
-      name: 'Taste',
-      description: 'Flavor profile and complexity',
-      maxScore: 25
-    },
-    {
-      id: 'mouthfeel',
-      name: 'Mouthfeel',
-      description: 'Body, carbonation, and texture',
-      maxScore: 15
-    },
-    {
-      id: 'finish',
-      name: 'Finish',
-      description: 'Aftertaste and lingering flavors',
-      maxScore: 15
-    },
-    {
+     
       id: 'overall',
       name: 'Overall Impression',
       description: 'Overall enjoyment and drinkability',
@@ -95,7 +66,7 @@ const ScorecardPage = () => {
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="bg-white p-8 rounded-xl shadow-lg">
           <h2 className="text-2xl text-rootbeer-700 mb-6">Basic Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="max-w-md mx-auto">
             <div className="flex flex-col">
               <label htmlFor="rootBeerName" className="font-semibold mb-2 text-gray-700">Root Beer Name</label>
               <input
@@ -110,40 +81,12 @@ const ScorecardPage = () => {
                 className="px-4 py-3 border-2 border-gray-200 rounded-lg text-base transition-colors duration-200 focus:outline-none focus:border-rootbeer-700"
               />
             </div>
-            <div className="flex flex-col">
-              <label htmlFor="brand" className="font-semibold mb-2 text-gray-700">Brand</label>
-              <input
-                type="text"
-                id="brand"
-                value={scorecardData.brand}
-                onChange={(e) => setScorecardData({
-                  ...scorecardData,
-                  brand: e.target.value
-                })}
-                required
-                className="px-4 py-3 border-2 border-gray-200 rounded-lg text-base transition-colors duration-200 focus:outline-none focus:border-rootbeer-700"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label htmlFor="date" className="font-semibold mb-2 text-gray-700">Date Tasted</label>
-              <input
-                type="date"
-                id="date"
-                value={scorecardData.date}
-                onChange={(e) => setScorecardData({
-                  ...scorecardData,
-                  date: e.target.value
-                })}
-                required
-                className="px-4 py-3 border-2 border-gray-200 rounded-lg text-base transition-colors duration-200 focus:outline-none focus:border-rootbeer-700"
-              />
-            </div>
           </div>
         </div>
 
         <div className="bg-white p-8 rounded-xl shadow-lg">
           <h2 className="text-2xl text-rootbeer-700 mb-6">Rating Criteria</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="max-w-2xl mx-auto space-y-6">
             {criteria.map((criterion) => (
               <div key={criterion.id} className="bg-gray-50 p-6 rounded-xl border border-gray-200">
                 <div className="flex justify-between items-center mb-2">
@@ -166,14 +109,6 @@ const ScorecardPage = () => {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-
-        <div className="bg-white p-8 rounded-xl shadow-lg">
-          <h2 className="text-2xl text-rootbeer-700 mb-6">Overall Rating</h2>
-          <div className="text-center py-8 bg-gradient-to-br from-rootbeer-700 to-rootbeer-800 text-white rounded-xl">
-            <span className="text-5xl font-bold block">{scorecardData.overallRating}</span>
-            <span className="text-2xl opacity-80">/ 100</span>
           </div>
         </div>
 

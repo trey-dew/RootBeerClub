@@ -2,6 +2,7 @@ const express = require("express")
 const cors = require("cors")
 const { Pool } = require("pg")
 require('dotenv').config()
+const session = require('express-session');
 
 const app = express()
 
@@ -28,7 +29,16 @@ pool.query('SELECT NOW()', (err, res) => {
 })
 
 app.use(express.json())
-app.use(cors())
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true
+}))
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'rootbeerclubsecret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 1 day
+}));
 
 // Test endpoint that doesn't require database
 app.get("/test", (req, res) => {
@@ -123,6 +133,48 @@ app.delete("/users/:id", async (req, res) => {
         res.status(500).json({ error: 'Internal server error' })
     }
 })
+
+// Login endpoint
+app.post("/login", async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email and password are required' });
+        }
+        const result = await pool.query(
+            'SELECT * FROM userinfo WHERE email = $1 AND password = $2',
+            [email, password]
+        );
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: 'Invalid email or password' });
+        }
+        const user = result.rows[0];
+        delete user.password;
+        req.session.user = user;
+        res.json({ message: 'Login successful', user });
+    } catch (err) {
+        console.error('Error during login:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get current logged-in user
+app.get('/me', (req, res) => {
+    if (req.session.user) {
+        res.json({ user: req.session.user });
+    } else {
+        res.status(401).json({ error: 'Not logged in' });
+    }
+});
+// Logout endpoint
+app.post('/logout', (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            return res.status(500).json({ error: 'Logout failed' });
+        }
+        res.json({ message: 'Logged out' });
+    });
+});
 
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => console.log(`Server running on localhost:${PORT}`))
