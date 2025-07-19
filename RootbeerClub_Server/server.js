@@ -45,6 +45,28 @@ app.get("/test", (req, res) => {
     res.json({ message: "Server is running!", timestamp: new Date().toISOString() })
 })
 
+// get all rootbeers
+app.get("/rootbeers", async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM rootbeers')
+        res.json(result.rows)
+    } catch (err) {
+        console.error('Error fetching rootbeers:', err)
+        res.status(500).json({ error: 'Internal server error' })
+    }
+})
+
+// get all ratings
+app.get("/ratings", async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM ratings')
+        res.json(result.rows)
+    } catch (err) {
+        console.error('Error fetching ratings:', err)
+        res.status(500).json({ error: 'Internal server error' })
+    }
+})
+
 // Get all users
 app.get("/users", async (req, res) => {
     try {
@@ -52,6 +74,30 @@ app.get("/users", async (req, res) => {
         res.json(result.rows)
     } catch (err) {
         console.error('Error fetching users:', err)
+        res.status(500).json({ error: 'Internal server error' })
+    }
+})
+
+// add new rootbeers
+app.post("/rootbeers", async (req, res) => {
+    try {
+        const { name, rating, date_tested, logo, nutrition_facts, is_rootbeer, rootbeer_facts} = req.body
+        const result = await pool.query('INSERT INTO rootbeers (name, rating, date_tested, logo, nutrition_facts, is_rootbeer, rootbeer_facts) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *', [name, rating, date_tested, logo, nutrition_facts, is_rootbeer, rootbeer_facts])
+        res.status(201).json(result.rows[0])
+    } catch (err) {
+        console.error('Error adding rootbeer:', err)
+        res.status(500).json({ error: 'Internal server error' })
+    }
+})
+
+// add new ratings
+app.post("/ratings", async (req, res) => {
+    try {
+        const { rootbeer_id, comment, rating, user_id } = req.body  
+        const result = await pool.query('INSERT INTO ratings (rootbeer_id, comment, rating, user_id) VALUES ($1, $2, $3, $4) RETURNING *', [rootbeer_id, comment, rating, user_id])
+        res.status(201).json(result.rows[0])
+    } catch (err) {
+        console.error('Error adding rating:', err)
         res.status(500).json({ error: 'Internal server error' })
     }
 })
@@ -77,6 +123,104 @@ app.post("/adduser", async (req, res) => {
         res.status(500).json({ error: 'Internal server error' })
     }
 })
+
+// get rootbeer by id
+app.get("/rootbeers/:rootbeer_id", async (req, res) => {
+    try {
+        const { rootbeer_id } = req.params
+        const result = await pool.query('SELECT * FROM rootbeers WHERE rootbeer_id = $1', [rootbeer_id])
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Rootbeer not found' })
+        }
+        res.json(result.rows[0])
+    } catch (err) {
+        console.error('Error fetching rootbeer:', err)
+        res.status(500).json({ error: 'Internal server error' })
+    }
+})
+
+// update rootbeer
+app.put("/rootbeers/:rootbeer_id", async (req, res) => {
+    try {
+        const { rootbeer_id } = req.params;
+        const { name, rating, date_tested, logo, nutrition_facts, is_rootbeer, rootbeer_facts } = req.body;
+        const result = await pool.query(
+            'UPDATE rootbeers SET name = $1, rating = $2, date_tested = $3, logo = $4, nutrition_facts = $5, is_rootbeer = $6, rootbeer_facts = $7 WHERE rootbeer_id = $8 RETURNING *',
+            [name, rating, date_tested, logo, nutrition_facts, is_rootbeer, rootbeer_facts, rootbeer_id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Rootbeer not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Error updating rootbeer:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// delete rootbeer
+app.delete("/rootbeers/:rootbeer_id", async (req, res) => {
+    try {
+        const { rootbeer_id } = req.params;
+        const result = await pool.query('DELETE FROM rootbeers WHERE rootbeer_id = $1 RETURNING *', [rootbeer_id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Rootbeer not found' });
+        }
+        res.json({ message: 'Rootbeer deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting rootbeer:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// get rating by id
+app.get("/ratings/:rating_id", async (req, res) => {
+    try {
+        const { rating_id } = req.params;
+        const result = await pool.query('SELECT * FROM ratings WHERE rating_id = $1', [rating_id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Rating not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Error fetching rating:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// update rating
+app.put("/ratings/:rating_id", async (req, res) => {
+    try {
+        const { rating_id } = req.params;
+        const { rootbeer_id, comment, rating, user_id } = req.body;
+        const result = await pool.query(
+            'UPDATE ratings SET rootbeer_id = $1, comment = $2, rating = $3, user_id = $4 WHERE rating_id = $5 RETURNING *',
+            [rootbeer_id, comment, rating, user_id, rating_id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Rating not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Error updating rating:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// delete rating
+app.delete("/ratings/:rating_id", async (req, res) => {
+    try {
+        const { rating_id } = req.params;
+        const result = await pool.query('DELETE FROM ratings WHERE rating_id = $1 RETURNING *', [rating_id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Rating not found' });
+        }
+        res.json({ message: 'Rating deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting rating:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 // Get user by ID
 app.get("/users/:id", async (req, res) => {
