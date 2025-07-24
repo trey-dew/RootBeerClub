@@ -260,7 +260,7 @@ const RootBeerListPage = () => {
                   onChange={handleUpdateFormChange}
                   min={0}
                   max={10}
-                  step={0.1}
+                  step={0.01}
                   className="w-full border px-3 py-2 rounded"
                   required
                 />
@@ -340,7 +340,7 @@ const RootBeerListPage = () => {
               onChange={handleFormChange}
               min={0}
               max={10}
-              step={0.1}
+              step={0.01}
               className="w-full border px-3 py-2 rounded"
               required
             />
@@ -426,13 +426,18 @@ const RootBeerListPage = () => {
                   <h3 className="text-2xl text-rootbeer-700 mb-2">{beer.name}</h3>
                 </div>
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="font-semibold text-rootbeer-700 text-lg">
-                    Rating: {beer.rating !== undefined && beer.rating !== null && !isNaN(Number(beer.rating))
-                      ? Number(beer.rating).toFixed(1)
-                      : 'N/A'}
-                  </span>
+                <span className="font-semibold text-rootbeer-700 text-lg">
+                  Rating: {beer.rating !== undefined && beer.rating !== null && !isNaN(Number(beer.rating))
+                  ? parseFloat(Number(beer.rating).toFixed(2)).toString()
+                  : 'N/A'}
+                </span>
+
                 </div>
-                <p className="text-gray-600 leading-relaxed mb-6 text-sm">{beer.rootbeer_facts || 'No description available.'}</p>
+                <p className="text-gray-600 leading-relaxed mb-6 text-sm">
+                  {(beer.rootbeer_facts?.length ?? 0) > 100
+                  ? `${beer.rootbeer_facts?.slice(0, 100)}...`
+                  : beer.rootbeer_facts || 'No description available.'}
+                </p>
                 <button className="btn btn-primary w-full">View Details</button>
               </div>
             ))}
