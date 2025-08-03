@@ -438,7 +438,12 @@ const RootBeerListPage = () => {
                   ? `${beer.rootbeer_facts?.slice(0, 100)}...`
                   : beer.rootbeer_facts || 'No description available.'}
                 </p>
-                <button className="btn btn-primary w-full">View Details</button>
+                <a
+                  href={`/rootbeers/${beer.rootbeer_id}`}
+                  className="btn btn-primary w-full text-center block"
+                >
+                  View Details
+                </a>
               </div>
             ))}
           </div>
