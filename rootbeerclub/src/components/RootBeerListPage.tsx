@@ -1,5 +1,12 @@
+
 import { useState, useEffect } from 'react';
 import { useUser } from './UserContext';
+
+interface User {
+  email: string;
+  is_admin?: boolean;
+  // ...other user fields if needed
+}
 
 interface RootBeer {
   rootbeer_id: number;
@@ -7,14 +14,18 @@ interface RootBeer {
   rating: number;
   logo?: string;
   rootbeer_facts?: string;
+  is_rootbeer?: boolean;
 }
 
 const RootBeerListPage = () => {
-  const { user } = useUser();
+  const { user } = useUser() as { user: User | null };
   const [rootBeers, setRootBeers] = useState<RootBeer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
+  const [total, setTotal] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', rating: '', logo: '', rootbeer_facts: '', nutrition_facts: '', is_rootbeer: false });
   const [formError, setFormError] = useState<string | null>(null);
@@ -25,40 +36,66 @@ const RootBeerListPage = () => {
   const [updateForm, setUpdateForm] = useState({ name: '', rating: '', logo: '', rootbeer_facts: '', nutrition_facts: '', is_rootbeer: true });
   const [updateFormError, setUpdateFormError] = useState<string | null>(null);
   const [updateFormLoading, setUpdateFormLoading] = useState(false);
+  // Filtering state
+  const [sortBy, setSortBy] = useState<'name' | 'rating'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [filterRootbeer, setFilterRootbeer] = useState<'all' | 'rootbeer' | 'notrootbeer' | 'rated'>('all');
 
-  const fetchRootBeers = async () => {
+
+  const fetchRootBeers = async (page = 1) => {
     setLoading(true);
     setError(null);
     try {
       const username = import.meta.env.VITE_API_USERNAME;
       const password = import.meta.env.VITE_API_PASSWORD;
       const basicAuth = btoa(`${username}:${password}`);
-
-      const res = await fetch('http://localhost:3000/rootbeers', {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+        sortBy,
+        sortOrder,
+      });
+      if (searchTerm.trim()) {
+        params.append('search', searchTerm.trim());
+      }
+      if (filterRootbeer === 'rootbeer') {
+        params.append('is_rootbeer', 'true');
+      } else if (filterRootbeer === 'notrootbeer') {
+        params.append('is_rootbeer', 'false');
+      } else if (filterRootbeer === 'rated') {
+        params.append('rated_only', 'true');
+      }
+      const res = await fetch(`http://localhost:3000/rootbeers?${params.toString()}`, {
         headers: {
           'Authorization': `Basic ${basicAuth}`
         }
       });
       if (!res.ok) throw new Error('Failed to fetch root beers');
       const data = await res.json();
-      setRootBeers(data.map((beer: any) => ({
+      setRootBeers(data.data.map((beer: any) => ({
         ...beer,
         rating: beer.rating !== undefined && beer.rating !== null ? Number(beer.rating) : null
       })));
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+      setTotal(data.total);
+    } catch (err) {
+      setError((err && (err as any).message) || 'Unknown error');
     } finally {
       setLoading(false);
     }
   };
 
+  // Fetch when page, search, sort, or filter changes
   useEffect(() => {
-    fetchRootBeers();
-  }, []);
+    fetchRootBeers(currentPage);
+    // eslint-disable-next-line
+  }, [currentPage, sortBy, sortOrder, filterRootbeer, searchTerm]);
 
-  const filteredRootBeers = rootBeers.filter(beer =>
-    beer.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Reset to page 1 if search, sort, or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortBy, sortOrder, filterRootbeer]);
+
+  const totalPages = Math.ceil(total / pageSize);
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -186,6 +223,14 @@ const RootBeerListPage = () => {
     }
   };
 
+  // Reset to page 1 if search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // No client-side filtering/sorting; backend handles it now
+  const displayedRootBeers = rootBeers;
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-12">
@@ -193,24 +238,92 @@ const RootBeerListPage = () => {
         <p className="text-xl text-gray-600">Discover and explore our collection of root beers</p>
       </div>
 
-      {user?.email === 'Trey.Dew@outlook.com' && (
-        <div className="mb-8 text-center flex flex-row items-center justify-center gap-4">
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowForm((v) => !v)}
-          >
-            {showForm ? 'Cancel' : 'Add Root Beer'}
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => setShowUpdate((v) => !v)}
-          >
-            {showUpdate ? 'Cancel' : 'Update Root Beer'}
-          </button>
+      {/* Search and filter controls - centered row */}
+      <div className="mb-12 flex justify-center w-full">
+        <div className="flex flex-col md:flex-row md:items-center gap-4 w-full max-w-5xl justify-center">
+          <input
+            type="text"
+            placeholder="Search root beers..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-grow px-5 py-2 border-2 border-gray-200 rounded-xl text-2xl bg-white shadow-lg transition-all duration-200 focus:outline-none focus:border-rootbeer-700 focus:shadow-xl min-w-[300px] max-w-[600px]"
+            style={{ flexBasis: '400px' }}
+          />
+          <div className="flex items-center bg-rootbeer-50 border border-rootbeer-100 rounded-xl shadow w-full md:w-auto">
+            {/* Sort By */}
+            <span className="font-semibold text-rootbeer-700 px-4 py-2">Sort</span>
+            <button
+              type="button"
+              className={`px-4 py-2 rounded-l-xl font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-rootbeer-400 ${sortBy === 'name' ? 'bg-rootbeer-700 text-white shadow' : 'bg-white text-rootbeer-700 hover:bg-rootbeer-100'}`}
+              onClick={() => setSortBy('name')}
+              style={{ borderRight: '1px solid #e5e7eb' }}
+            >
+              Name
+            </button>
+            <button
+              type="button"
+              className={`px-4 py-2 font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-rootbeer-400 ${sortBy === 'rating' ? 'bg-rootbeer-700 text-white shadow' : 'bg-white text-rootbeer-700 hover:bg-rootbeer-100'}`}
+              onClick={() => setSortBy('rating')}
+              style={{ borderRight: '1px solid #e5e7eb' }}
+            >
+              Rating
+            </button>
+            {/* Sort Order Toggle */}
+            <button
+              type="button"
+              className={`px-4 py-2 rounded-r-xl font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-rootbeer-400 flex items-center gap-1 ${sortOrder === 'asc' ? 'bg-white text-rootbeer-700 hover:bg-rootbeer-100' : 'bg-rootbeer-700 text-white shadow'}`}
+              onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
+              title={sortOrder === 'asc' ? 'Ascending (A→Z, 0→9)' : 'Descending (Z→A, 9→0)'}
+              aria-label="Toggle sort order"
+              style={{ borderLeft: '1px solid #e5e7eb' }}
+            >
+              {sortOrder === 'asc' ? (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+                  <span className="text-xs">Asc</span>
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                  <span className="text-xs">Desc</span>
+                </>
+              )}
+            </button>
+            {/* Type Filter as dropdown */}
+            <span className="font-semibold text-rootbeer-700 px-4 py-2 border-l border-rootbeer-100">Type</span>
+            <select
+              value={filterRootbeer}
+              onChange={e => setFilterRootbeer(e.target.value as 'all' | 'rootbeer' | 'notrootbeer' | 'rated')}
+              className="px-4 py-2 rounded-xl font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-rootbeer-400 bg-white text-rootbeer-700 border border-rootbeer-200 ml-2 mr-4"
+              style={{ minWidth: 140 }}
+              aria-label="Filter by type"
+            >
+              <option value="all">All</option>
+              <option value="rootbeer">Root Beer Only</option>
+              <option value="notrootbeer">Not Root Beer</option>
+              <option value="rated">Reviewed</option>
+            </select>
+          </div>
         </div>
-      )}
+      </div>
+        {user?.is_admin && (
+          <div className="mb-8 text-center flex flex-row items-center justify-center gap-4">
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowForm((v) => !v)}
+            >
+              {showForm ? 'Cancel' : 'Add Root Beer'}
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowUpdate((v) => !v)}
+            >
+              {showUpdate ? 'Cancel' : 'Update Root Beer'}
+            </button>
+          </div>
+        )}
 
-      {showUpdate && user?.email === 'Trey.Dew@outlook.com' && (
+      {showUpdate && user?.is_admin && (
         <div className="max-w-lg mx-auto mb-8 bg-white p-6 rounded-xl shadow space-y-4">
           <div>
             <label className="block font-semibold mb-1">Search Root Beer by Name</label>
@@ -318,7 +431,7 @@ const RootBeerListPage = () => {
         </div>
       )}
 
-      {showForm && user?.email === 'Trey.Dew@outlook.com' && (
+      {showForm && user?.is_admin && (
         <form onSubmit={handleFormSubmit} className="max-w-lg mx-auto mb-8 bg-white p-6 rounded-xl shadow space-y-4">
           <div>
             <label className="block font-semibold mb-1">Name</label>
@@ -397,15 +510,7 @@ const RootBeerListPage = () => {
         </form>
       )}
 
-      <div className="mb-12 text-center">
-        <input
-          type="text"
-          placeholder="Search root beers..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full max-w-md px-6 py-4 border-2 border-gray-200 rounded-xl text-lg bg-white shadow-lg transition-all duration-200 focus:outline-none focus:border-rootbeer-700 focus:shadow-xl"
-        />
-      </div>
+      {/* Removed duplicate search bar here */}
 
       {loading && (
         <div className="text-center py-12 text-gray-600 text-lg">Loading root beers...</div>
@@ -417,7 +522,7 @@ const RootBeerListPage = () => {
       {!loading && !error && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredRootBeers.map((beer) => (
+            {displayedRootBeers.map((beer) => (
               <div key={beer.rootbeer_id} className="bg-white rounded-xl p-8 shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl border border-gray-100">
                 {beer.logo && (
                   <img src={beer.logo} alt={beer.name} className="mb-4 w-full h-40 object-contain rounded" />
@@ -427,9 +532,11 @@ const RootBeerListPage = () => {
                 </div>
                 <div className="flex items-center gap-2 mb-4">
                 <span className="font-semibold text-rootbeer-700 text-lg">
-                  Rating: {beer.rating !== undefined && beer.rating !== null && !isNaN(Number(beer.rating))
-                  ? parseFloat(Number(beer.rating).toFixed(2)).toString()
-                  : 'N/A'}
+                  Rating: {beer.rating === 0
+                    ? 'Not Rated'
+                    : (beer.rating !== undefined && beer.rating !== null && !isNaN(Number(beer.rating))
+                        ? parseFloat(Number(beer.rating).toFixed(2)).toString()
+                        : 'N/A')}
                 </span>
 
                 </div>
@@ -448,15 +555,44 @@ const RootBeerListPage = () => {
             ))}
           </div>
 
-          {filteredRootBeers.length === 0 && (
+          {displayedRootBeers.length === 0 && (
             <div className="text-center py-12 text-gray-600 text-lg">
-              <p>No root beers found matching your search.</p>
+              <p>No root beers found matching your search and filters.</p>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-10">
+              <button
+                className="px-3 py-1 rounded border bg-white text-rootbeer-700 font-semibold disabled:opacity-50"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  className={`px-3 py-1 rounded border font-semibold ${page === currentPage ? 'bg-rootbeer-700 text-white' : 'bg-white text-rootbeer-700'}`}
+                  onClick={() => setCurrentPage(page)}
+                  disabled={page === currentPage}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                className="px-3 py-1 rounded border bg-white text-rootbeer-700 font-semibold disabled:opacity-50"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
             </div>
           )}
         </>
       )}
     </div>
   );
-};
+}
 
-export default RootBeerListPage; 
+export default RootBeerListPage;

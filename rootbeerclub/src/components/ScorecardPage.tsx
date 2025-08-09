@@ -20,11 +20,12 @@ interface UserWithId {
 
 const ScorecardPage = () => {
   const { user } = useUser() as { user: UserWithId | null };
-  const [scorecardData, setScorecardData] = useState<ScorecardData>({
-    rootBeerId: null,
-    notes: '',
-    overallRating: 0
-  });
+const [scorecardData, setScorecardData] = useState<ScorecardData>({
+  rootBeerId: null,
+  notes: '',
+  overallRating: 0
+});
+const [isRootbeer, setIsRootbeer] = useState(true);
   const [rootbeers, setRootbeers] = useState<RootBeer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   // Removed unused loadingRootbeers
@@ -62,13 +63,15 @@ const ScorecardPage = () => {
           rootbeer_id: scorecardData.rootBeerId,
           comment: scorecardData.notes,
           rating: scorecardData.overallRating,
-          user_id: user.user_id
+          user_id: user.user_id,
+          is_rootbeer: isRootbeer
         })
       });
       if (!res.ok) throw new Error('Failed to submit rating');
       alert('Scorecard submitted successfully!');
       setScorecardData({ rootBeerId: null, notes: '', overallRating: 0 });
       setSearchTerm('');
+      setIsRootbeer(true);
       // setSelectedUserId(null); // No longer needed
     } catch (err: any) {
       setSubmitError(err.message || 'Unknown error');
@@ -102,27 +105,40 @@ const ScorecardPage = () => {
           <h2 className="text-2xl text-rootbeer-700 mb-6">Basic Information</h2>
           <div className="max-w-md mx-auto">
             {/* Judge selection removed; using logged-in user */}
-            <div className="flex flex-col">
-              <label htmlFor="rootBeerSelect" className="font-semibold mb-2 text-gray-700">Root Beer Name</label>
+            <div className="flex flex-col relative">
+              <label htmlFor="rootBeerSearch" className="font-semibold mb-2 text-gray-700">Root Beer Name</label>
               <input
+                id="rootBeerSearch"
                 type="text"
                 placeholder="Search root beers..."
                 value={searchTerm}
+                autoComplete="off"
                 onChange={e => setSearchTerm(e.target.value)}
-                className="mb-2 px-4 py-2 border-2 border-gray-200 rounded-lg text-base"
+                className="px-4 py-2 border-2 border-gray-200 rounded-lg text-base"
               />
-              <select
-                id="rootBeerSelect"
-                value={scorecardData.rootBeerId || ''}
-                onChange={e => setScorecardData({ ...scorecardData, rootBeerId: Number(e.target.value) })}
-                required
-                className="px-4 py-3 border-2 border-gray-200 rounded-lg text-base transition-colors duration-200 focus:outline-none focus:border-rootbeer-700"
-              >
-                <option value="">Select a root beer...</option>
-                {rootbeers.filter(rb => rb.name.toLowerCase().includes(searchTerm.toLowerCase())).map(rb => (
-                  <option key={rb.rootbeer_id} value={rb.rootbeer_id}>{rb.name}</option>
-                ))}
-              </select>
+              {searchTerm && searchTerm !== rootbeers.find(rb => rb.rootbeer_id === scorecardData.rootBeerId)?.name && (
+                <ul className="absolute z-10 bg-white border border-gray-200 rounded w-full mt-1 max-h-60 overflow-y-auto shadow-lg top-full left-0">
+                  {rootbeers
+                    .filter(rb => rb.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                    .slice(0, 5)
+                    .map(rb => (
+                      <li
+                        key={rb.rootbeer_id}
+                        className={`px-4 py-2 cursor-pointer hover:bg-rootbeer-100 ${scorecardData.rootBeerId === rb.rootbeer_id ? 'bg-rootbeer-200' : ''}`}
+                        onClick={() => {
+                          setScorecardData({ ...scorecardData, rootBeerId: rb.rootbeer_id });
+                          setSearchTerm(rb.name); // Show selected name in input
+                        }}
+                      >
+                        {rb.name}
+                      </li>
+                    ))}
+                  {rootbeers.filter(rb => rb.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
+                    <li className="px-4 py-2 text-gray-400">No matches found.</li>
+                  )}
+                </ul>
+              )}
+              <input type="hidden" required value={scorecardData.rootBeerId || ''} />
             </div>
           </div>
         </div>
@@ -165,6 +181,18 @@ const ScorecardPage = () => {
             rows={4}
             className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-base font-inherit resize-y min-h-32 transition-colors duration-200 focus:outline-none focus:border-rootbeer-700"
           />
+          <div className="flex items-center mt-4">
+            <input
+              id="isRootbeerCheckbox"
+              type="checkbox"
+              checked={isRootbeer}
+              onChange={e => setIsRootbeer(e.target.checked)}
+              className="mr-2 h-5 w-5 text-rootbeer-700 focus:ring-rootbeer-700 border-gray-300 rounded"
+            />
+            <label htmlFor="isRootbeerCheckbox" className="text-gray-700 font-medium select-none">
+              Is this a root beer?
+            </label>
+          </div>
         </div>
 
         {submitError && <div className="text-center text-red-500 mb-4">{submitError}</div>}
