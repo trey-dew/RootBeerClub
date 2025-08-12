@@ -114,6 +114,30 @@ app.get("/ratings", async (req, res) => {
     }
 })
 
+// --- Add "about" to all userinfo CRUD operations ---
+
+// Add new user
+app.post("/adduser", async (req, res) => {
+    try {
+        const { firstname, lastname, email, password, is_admin, about } = req.body
+        
+        // Basic validation
+        if (!firstname || !lastname || !email || !password) {
+            return res.status(400).json({ error: 'All fields are required' })
+        }
+
+        const result = await pool.query(
+            'INSERT INTO userinfo (firstname, lastname, email, password, is_admin, about) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [firstname, lastname, email, password, is_admin === true, about || null]
+        )
+        
+        res.status(201).json(result.rows[0])
+    } catch (err) {
+        console.error('Error adding user:', err)
+        res.status(500).json({ error: 'Internal server error' })
+    }
+})
+
 // Get all users
 app.get("/users", async (req, res) => {
     try {
@@ -307,11 +331,11 @@ app.get("/users/:id", async (req, res) => {
 app.put("/users/:id", async (req, res) => {
     try {
         const { id } = req.params
-        const { firstname, lastname, password, is_admin } = req.body
+        const { firstname, lastname, password, is_admin, about } = req.body
         
         const result = await pool.query(
-            'UPDATE userinfo SET firstname = $1, lastname = $2, password = $3, is_admin = $4 WHERE user_id = $5 RETURNING *',
-            [firstname, lastname, password, is_admin === true, id]
+            'UPDATE userinfo SET firstname = $1, lastname = $2, password = $3, is_admin = $4, about = $5 WHERE user_id = $6 RETURNING *',
+            [firstname, lastname, password, is_admin === true, about, id]
         )
         
         if (result.rows.length === 0) {

@@ -62,6 +62,14 @@ const Navigation = () => {
               )}
             </Link>
           </li>
+          <li>
+            <Link
+              to="/judges"
+              className="px-4 py-2 text-rootbeer-700 hover:text-rootbeer-900 font-semibold transition"
+            >
+              Judges
+            </Link>
+          </li>
           {user ? (
             <>
               <li className="text-gray-700 font-medium">Logged in as {user.firstname}</li>
@@ -98,4 +106,4 @@ const Navigation = () => {
   );
 };
 
-export default Navigation; 
+export default Navigation;

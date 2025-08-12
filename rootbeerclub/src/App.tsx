@@ -6,6 +6,7 @@ import RootBeerDetailsPage from './components/RootBeerDetailsPage';
 import ScorecardPage from './components/ScorecardPage';
 import LoginPage from './components/LoginPage';
 import { UserProvider } from './components/UserContext';
+import JudgesPage from './components/JudgesPage';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
               <Route path="/scorecard" element={<ScorecardPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/rootbeers/:rootbeer_id" element={<RootBeerDetailsPage />} />
+              <Route path="/judges" element={<JudgesPage />} /> {/* New Judges route */}
             </Routes>
           </main>
         </div>
