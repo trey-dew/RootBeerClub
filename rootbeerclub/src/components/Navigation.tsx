@@ -63,11 +63,18 @@ const Navigation = () => {
             </Link>
           </li>
           <li>
-            <Link
-              to="/judges"
-              className="px-4 py-2 text-rootbeer-700 hover:text-rootbeer-900 font-semibold transition"
+            <Link 
+              to="/judges" 
+              className={`px-4 py-2 rounded-md font-medium transition-all duration-200 relative ${
+                isActive('/judges') 
+                  ? 'text-rootbeer-700 bg-yellow-50 font-semibold' 
+                  : 'text-gray-600 hover:text-rootbeer-700 hover:bg-gray-50'
+              }`}
             >
               Judges
+              {isActive('/judges') && (
+                <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-5 h-0.5 bg-rootbeer-700 rounded-full"></span>
+              )}
             </Link>
           </li>
           {user ? (

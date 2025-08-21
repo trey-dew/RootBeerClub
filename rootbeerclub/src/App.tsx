@@ -7,7 +7,7 @@ import ScorecardPage from './components/ScorecardPage';
 import LoginPage from './components/LoginPage';
 import { UserProvider } from './components/UserContext';
 import JudgesPage from './components/JudgesPage';
-
+import JudgeProfilePage from './components/JudgeProfilePage'
 function App() {
   return (
     <UserProvider>
@@ -21,7 +21,8 @@ function App() {
               <Route path="/scorecard" element={<ScorecardPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/rootbeers/:rootbeer_id" element={<RootBeerDetailsPage />} />
-              <Route path="/judges" element={<JudgesPage />} /> {/* New Judges route */}
+              <Route path="/judges" element={<JudgesPage />} />
+              <Route path="/judges/:judgeId" element={<JudgeProfilePage />} />
             </Routes>
           </main>
         </div>

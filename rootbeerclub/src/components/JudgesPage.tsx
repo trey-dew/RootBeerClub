@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 interface Judge {
   user_id: number;
@@ -35,12 +36,17 @@ const JudgesPage = () => {
       {error && <div className="text-center text-red-500">{error}</div>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {judges.map(judge => (
-          <div key={judge.user_id} className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+          <Link
+            to={`/judges/${judge.user_id}`}
+            key={judge.user_id}
+            className="bg-white rounded-xl shadow p-6 flex flex-col items-center hover:bg-rootbeer-50 transition"
+          >
             <div className="text-xl font-bold text-rootbeer-700 mb-2">
               {judge.firstname} {judge.lastname}
             </div>
             <div className="text-gray-600 text-center">{judge.about || 'No bio available.'}</div>
-          </div>
+            <span className="mt-4 text-rootbeer-700 underline text-sm">View Profile</span>
+          </Link>
         ))}
       </div>
     </div>

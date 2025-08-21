@@ -81,16 +81,14 @@ const [isRootbeer, setIsRootbeer] = useState(true);
   useEffect(() => {
     const fetchRootbeers = async () => {
       try {
-        const res = await fetch('http://localhost:3000/rootbeers');
+        const res = await fetch('http://localhost:3000/rootbeers?all=true');
         const data = await res.json();
-        setRootbeers(data);
+        setRootbeers(data.data); // This will now be ALL rootbeers
       } catch {
         setRootbeers([]);
       }
     };
-    // fetchUsers removed
     fetchRootbeers();
-    // fetchUsers();
   }, []);
 
   return (
