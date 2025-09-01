@@ -1,5 +1,5 @@
 const express = require("express")
-const cors = require("cors")
+const cors = require("cors");
 const { Pool } = require("pg")
 require('dotenv').config()
 const session = require('express-session');
@@ -30,8 +30,11 @@ pool.query('SELECT NOW()', (err, res) => {
 
 app.use(express.json())
 app.use(cors({
-    origin: 'http://localhost:5173',
-    credentials: true
+  origin: [
+    'http://localhost:5173',
+    'https://root-beer-club-aooq6tyoe-trey-dews-projects.vercel.app'
+  ],
+  credentials: true
 }))
 app.use(session({
     secret: process.env.SESSION_SECRET || 'rootbeerclubsecret',
