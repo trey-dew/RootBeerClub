@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { useUser } from './UserContext';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface User {
   email: string;
@@ -65,7 +65,7 @@ const RootBeerListPage = () => {
       } else if (filterRootbeer === 'rated') {
         params.append('rated_only', 'true');
       }
-      const res = await fetch(`http://localhost:3000/rootbeers?${params.toString()}`, {
+      const res = await fetch(`${API_BASE_URL}/rootbeers?${params.toString()}`, {
         headers: {
           'Authorization': `Basic ${basicAuth}`
         }
@@ -125,7 +125,7 @@ const RootBeerListPage = () => {
       const username = import.meta.env.VITE_API_USERNAME;
       const password = import.meta.env.VITE_API_PASSWORD;
       const basicAuth = btoa(`${username}:${password}`);
-      const res = await fetch('http://localhost:3000/rootbeers', {
+      const res = await fetch(`${API_BASE_URL}/rootbeers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -196,7 +196,7 @@ const RootBeerListPage = () => {
       const username = import.meta.env.VITE_API_USERNAME;
       const password = import.meta.env.VITE_API_PASSWORD;
       const basicAuth = btoa(`${username}:${password}`);
-      const res = await fetch(`http://localhost:3000/rootbeers/${selectedRootBeer.rootbeer_id}`, {
+      const res = await fetch(`${API_BASE_URL}rootbeers/${selectedRootBeer.rootbeer_id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

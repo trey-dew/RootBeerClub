@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface Judge {
   user_id: number;
@@ -26,13 +27,13 @@ const JudgeProfilePage = () => {
     const fetchJudgeAndTopRootBeers = async () => {
       try {
         // Fetch judge info
-        const judgeRes = await fetch(`http://localhost:3000/users/${judgeId}`);
+        const judgeRes = await fetch(`${API_BASE_URL}/users/${judgeId}`);
         if (!judgeRes.ok) throw new Error('Failed to fetch judge');
         const judgeData = await judgeRes.json();
         setJudge(judgeData);
 
         // Fetch top 10 rootbeers rated by this judge
-        const topRes = await fetch(`http://localhost:3000/ratings/top10?user_id=${judgeId}`);
+        const topRes = await fetch(`${API_BASE_URL}/ratings/top10?user_id=${judgeId}`);
         if (!topRes.ok) throw new Error('Failed to fetch top rootbeers');
         let topData = await topRes.json();
 

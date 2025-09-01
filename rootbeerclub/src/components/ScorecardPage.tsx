@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useUser } from './UserContext';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface RootBeer {
   rootbeer_id: number;
@@ -56,7 +57,7 @@ const [isRootbeer, setIsRootbeer] = useState(true);
       return;
     }
     try {
-      const res = await fetch('http://localhost:3000/ratings', {
+      const res = await fetch(`${API_BASE_URL}/ratings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -81,7 +82,7 @@ const [isRootbeer, setIsRootbeer] = useState(true);
   useEffect(() => {
     const fetchRootbeers = async () => {
       try {
-        const res = await fetch('http://localhost:3000/rootbeers?all=true');
+        const res = await fetch(`${API_BASE_URL}/rootbeers?all=true`);
         const data = await res.json();
         setRootbeers(data.data); // This will now be ALL rootbeers
       } catch {

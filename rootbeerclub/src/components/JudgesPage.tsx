@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface Judge {
   user_id: number;
@@ -16,7 +17,7 @@ const JudgesPage = () => {
   useEffect(() => {
     const fetchJudges = async () => {
       try {
-        const res = await fetch('http://localhost:3000/users');
+        const res = await fetch(`${API_BASE_URL}/users`);
         if (!res.ok) throw new Error('Failed to fetch judges');
         const data = await res.json();
         setJudges(data);

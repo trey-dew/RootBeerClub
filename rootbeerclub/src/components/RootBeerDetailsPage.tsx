@@ -1,6 +1,6 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface RootBeer {
   rootbeer_id: number;
@@ -39,16 +39,16 @@ const RootBeerDetailsPage: React.FC = () => {
   useEffect(() => {
     const fetchDetails = async () => {
       try {
-        const rbRes = await fetch(`http://localhost:3000/rootbeers/${rootbeer_id}`);
+        const rbRes = await fetch(`${API_BASE_URL}/rootbeers/${rootbeer_id}`);
         if (!rbRes.ok) throw new Error('Rootbeer not found');
         const rbData = await rbRes.json();
         setRootbeer(rbData);
 
-        const ratingsRes = await fetch('http://localhost:3000/ratings');
+        const ratingsRes = await fetch(`${API_BASE_URL}/ratings`);
         const ratingsData: Rating[] = await ratingsRes.json();
         setRatings(ratingsData.filter(r => r.rootbeer_id === Number(rootbeer_id)));
 
-        const usersRes = await fetch('http://localhost:3000/users');
+        const usersRes = await fetch(`${API_BASE_URL}/users`);
         const usersData: UserInfo[] = await usersRes.json();
         setUsers(usersData);
       } catch (err: any) {

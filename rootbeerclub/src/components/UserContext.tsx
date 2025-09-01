@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface User {
   id: number;
@@ -30,7 +31,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUser = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3000/me', { credentials: 'include' });
+      const res = await fetch(`${API_BASE_URL}/me`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
@@ -50,7 +51,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3000/login', {
+      const res = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -72,7 +73,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     setLoading(true);
-    await fetch('http://localhost:3000/logout', {
+    await fetch(`${API_BASE_URL}/logout`, {
       method: 'POST',
       credentials: 'include',
     });
