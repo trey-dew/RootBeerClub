@@ -11,7 +11,7 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'https://root-beer-club-aooq6tyoe-trey-dews-projects.vercel.app',
-    'https://root-beer-club.vercel.app'
+    'https://root-beer-club.vercel.app' // <-- Add your production frontend!
   ],
   credentials: true
 }));
@@ -22,7 +22,11 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'rootbeerclubsecret',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 1 day
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 24 * 60 * 60 * 1000
+    }
 }));
 
 // PostgreSQL connection configuration
@@ -125,8 +129,6 @@ app.get("/ratings", async (req, res) => {
     }
 })
 
-// --- Add "about" to all userinfo CRUD operations ---
-
 // Add new user
 app.post("/adduser", async (req, res) => {
     try {
@@ -200,28 +202,6 @@ app.post("/ratings", async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-
-// Add new user
-app.post("/adduser", async (req, res) => {
-    try {
-        const { firstname, lastname, email, password, is_admin } = req.body
-        
-        // Basic validation
-        if (!firstname || !lastname || !email || !password) {
-            return res.status(400).json({ error: 'All fields are required' })
-        }
-
-        const result = await pool.query(
-            'INSERT INTO userinfo (firstname, lastname, email, password, is_admin) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [firstname, lastname, email, password, is_admin === true]
-        )
-        
-        res.status(201).json(result.rows[0])
-    } catch (err) {
-        console.error('Error adding user:', err)
-        res.status(500).json({ error: 'Internal server error' })
-    }
-})
 
 // get rootbeer by id
 app.get("/rootbeers/:rootbeer_id", async (req, res) => {
