@@ -23,12 +23,13 @@ const LoginPage: React.FC = () => {
   return (
     <div className="max-w-md mx-auto mt-16 p-8 bg-white rounded shadow">
       <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
         <div>
           <label htmlFor="email" className="block mb-1 font-medium">Email</label>
           <input
             id="email"
             type="email"
+            autoComplete="email"
             className="w-full border px-3 py-2 rounded"
             value={email}
             onChange={e => setEmail(e.target.value)}
@@ -40,6 +41,7 @@ const LoginPage: React.FC = () => {
           <input
             id="password"
             type="password"
+            autoComplete="current-password"
             className="w-full border px-3 py-2 rounded"
             value={password}
             onChange={e => setPassword(e.target.value)}
