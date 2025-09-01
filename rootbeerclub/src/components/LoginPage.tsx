@@ -25,8 +25,9 @@ const LoginPage: React.FC = () => {
       <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block mb-1 font-medium">Email</label>
+          <label htmlFor="email" className="block mb-1 font-medium">Email</label>
           <input
+            id="email"
             type="email"
             className="w-full border px-3 py-2 rounded"
             value={email}
@@ -35,8 +36,9 @@ const LoginPage: React.FC = () => {
           />
         </div>
         <div>
-          <label className="block mb-1 font-medium">Password</label>
+          <label htmlFor="password" className="block mb-1 font-medium">Password</label>
           <input
+            id="password"
             type="password"
             className="w-full border px-3 py-2 rounded"
             value={password}
@@ -57,4 +59,4 @@ const LoginPage: React.FC = () => {
   );
 };
 
-export default LoginPage; 
+export default LoginPage;
