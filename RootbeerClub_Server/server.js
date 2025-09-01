@@ -21,9 +21,9 @@ app.use(express.json())
 app.use(session({
   secret: process.env.SESSION_SECRET || 'rootbeerclubsecret',
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true,
   cookie: {
-    secure: false,
+    secure: true,
     sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000
   }
