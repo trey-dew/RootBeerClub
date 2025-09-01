@@ -8,12 +8,12 @@ const app = express()
 
 // PostgreSQL connection configuration
 const pool = new Pool({
-    user: process.env.DB_USER || 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'RootBeerClub',
-    password: process.env.DB_PASSWORD || '',
-    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 5434,
-    ssl: false,
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 5432,
+    ssl: { rejectUnauthorized: false }, // Supabase requires SSL
     connectionTimeoutMillis: 5000,
     idleTimeoutMillis: 30000,
 })
@@ -261,175 +261,6 @@ app.delete("/rootbeers/:rootbeer_id", async (req, res) => {
         res.json({ message: 'Rootbeer deleted successfully' });
     } catch (err) {
         console.error('Error deleting rootbeer:', err);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Get user by ID
-app.get("/users/:id", async (req, res) => {
-    try {
-        const { id } = req.params
-        const result = await pool.query('SELECT * FROM userinfo WHERE user_id = $1', [id])
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'User not found' })
-        }
-        
-        res.json(result.rows[0])
-    } catch (err) {
-        console.error('Error fetching user:', err)
-        res.status(500).json({ error: 'Internal server error' })
-    }
-})
-
-// Update user
-app.put("/users/:id", async (req, res) => {
-    try {
-        const { id } = req.params
-        const { firstname, lastname, password, is_admin, about } = req.body
-        
-        const result = await pool.query(
-            'UPDATE userinfo SET firstname = $1, lastname = $2, password = $3, is_admin = $4, about = $5 WHERE user_id = $6 RETURNING *',
-            [firstname, lastname, password, is_admin === true, about, id]
-        )
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'User not found' })
-        }
-        
-        res.json(result.rows[0])
-    } catch (err) {
-        console.error('Error updating user:', err)
-        res.status(500).json({ error: 'Internal server error' })
-    }
-})
-
-// Delete user
-app.delete("/users/:id", async (req, res) => {
-    try {
-        const { id } = req.params
-        const result = await pool.query('DELETE FROM userinfo WHERE user_id = $1 RETURNING *', [id])
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'User not found' })
-        }
-        
-        res.json({ message: 'User deleted successfully' })
-    } catch (err) {
-        console.error('Error deleting user:', err)
-        res.status(500).json({ error: 'Internal server error' })
-    }
-})
-
-// Login endpoint
-app.post("/login", async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email and password are required' });
-        }
-        const result = await pool.query(
-            'SELECT * FROM userinfo WHERE email = $1 AND password = $2',
-            [email, password]
-        );
-        if (result.rows.length === 0) {
-            return res.status(401).json({ error: 'Invalid email or password' });
-        }
-        const user = result.rows[0];
-        delete user.password;
-        // is_admin is now included in user object
-        req.session.user = user;
-        res.json({ message: 'Login successful', user });
-    } catch (err) {
-        console.error('Error during login:', err);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Get current logged-in user
-app.get('/me', (req, res) => {
-    if (req.session.user) {
-        res.json({ user: req.session.user });
-    } else {
-        res.status(401).json({ error: 'Not logged in' });
-    }
-});
-// Logout endpoint
-app.post('/logout', (req, res) => {
-    req.session.destroy(err => {
-        if (err) {
-            return res.status(500).json({ error: 'Logout failed' });
-        }
-        res.json({ message: 'Logged out' });
-    });
-});
-
-// Get top 10 ratings for a user
-app.get('/ratings/top10', async (req, res) => {
-  const user_id = req.query.user_id;
-  if (!user_id) return res.status(400).json({ error: 'user_id required' });
-  try {
-    const result = await pool.query(
-      `SELECT r.rootbeer_id, rb.name, rb.logo, r.rating
-       FROM ratings r
-       JOIN rootbeers rb ON r.rootbeer_id = rb.rootbeer_id
-       WHERE r.user_id = $1
-       ORDER BY r.rating DESC
-       LIMIT 10`,
-      [user_id]
-    );
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching top 10 rootbeers:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// get rating by id
-app.get("/ratings/:rating_id", async (req, res) => {
-    try {
-        const { rating_id } = req.params;
-        const result = await pool.query('SELECT * FROM ratings WHERE rating_id = $1', [rating_id]);
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Rating not found' });
-        }
-        res.json(result.rows[0]);
-    } catch (err) {
-        console.error('Error fetching rating:', err);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// update rating
-app.put("/ratings/:rating_id", async (req, res) => {
-    try {
-        const { rating_id } = req.params;
-        const { rootbeer_id, comment, rating, user_id, is_rootbeer } = req.body;
-        const result = await pool.query(
-            'UPDATE ratings SET rootbeer_id = $1, comment = $2, rating = $3, user_id = $4, is_rootbeer = $5 WHERE rating_id = $6 RETURNING *',
-            [rootbeer_id, comment, rating, user_id, is_rootbeer, rating_id]
-        );
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Rating not found' });
-        }
-        res.json(result.rows[0]);
-    } catch (err) {
-        console.error('Error updating rating:', err);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// delete rating
-app.delete("/ratings/:rating_id", async (req, res) => {
-    try {
-        const { rating_id } = req.params;
-        const result = await pool.query('DELETE FROM ratings WHERE rating_id = $1 RETURNING *', [rating_id]);
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Rating not found' });
-        }
-        res.json({ message: 'Rating deleted successfully' });
-    } catch (err) {
-        console.error('Error deleting rating:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
