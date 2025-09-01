@@ -32,7 +32,8 @@ app.use(express.json())
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://root-beer-club-aooq6tyoe-trey-dews-projects.vercel.app'
+    'https://root-beer-club-aooq6tyoe-trey-dews-projects.vercel.app',
+    'https://root-beer-club.vercel.app'
   ],
   credentials: true
 }))
