@@ -6,6 +6,25 @@ const session = require('express-session');
 
 const app = express()
 
+// CORS FIRST!
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://root-beer-club-aooq6tyoe-trey-dews-projects.vercel.app',
+    'https://root-beer-club.vercel.app'
+  ],
+  credentials: true
+}));
+app.options('*', cors());
+
+app.use(express.json())
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'rootbeerclubsecret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 1 day
+}));
+
 // PostgreSQL connection configuration
 const pool = new Pool({
     user: process.env.DB_USER,
@@ -27,22 +46,6 @@ pool.query('SELECT NOW()', (err, res) => {
         console.log('Database connected successfully')
     }
 })
-
-app.use(express.json())
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://root-beer-club-aooq6tyoe-trey-dews-projects.vercel.app',
-    'https://root-beer-club.vercel.app'
-  ],
-  credentials: true
-}))
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'rootbeerclubsecret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 1 day
-}));
 
 // Test endpoint that doesn't require database
 app.get("/test", (req, res) => {
