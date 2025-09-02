@@ -6,29 +6,26 @@ const session = require('express-session');
 
 const app = express()
 
+// CORS FIRST - before any other middleware
+app.use(cors({
+  origin: 'https://root-beer-club.vercel.app',
+  credentials: true
+}));
 
 app.use(express.json())
+
+// Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'rootbeerclubsecret',
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false, // changed from true
   cookie: {
     secure: true,
-    sameSite: 'lax',
-    maxAge: 24 * 60 * 60 * 1000
+    sameSite: 'none', // changed from 'lax'
+    maxAge: 24 * 60 * 60 * 1000,
+    httpOnly: true
   }
 }));
-
-// CORS FIRST!
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://root-beer-club-aooq6tyoe-trey-dews-projects.vercel.app',
-    'https://root-beer-club.vercel.app'
-  ],
-  credentials: true
-}));
-app.options('*', cors());
 
 // PostgreSQL connection configuration
 const pool = new Pool({
