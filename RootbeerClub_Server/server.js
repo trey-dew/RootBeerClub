@@ -6,16 +6,6 @@ const session = require('express-session');
 
 const app = express()
 
-// CORS FIRST!
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://root-beer-club-aooq6tyoe-trey-dews-projects.vercel.app',
-    'https://root-beer-club.vercel.app'
-  ],
-  credentials: true
-}));
-app.options('*', cors());
 
 app.use(express.json())
 app.use(session({
@@ -28,6 +18,17 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000
   }
 }));
+
+// CORS FIRST!
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://root-beer-club-aooq6tyoe-trey-dews-projects.vercel.app',
+    'https://root-beer-club.vercel.app'
+  ],
+  credentials: true
+}));
+app.options('*', cors());
 
 // PostgreSQL connection configuration
 const pool = new Pool({
