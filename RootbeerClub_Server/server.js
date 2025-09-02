@@ -3,19 +3,9 @@ const cors = require("cors");
 const { Pool } = require("pg")
 require('dotenv').config()
 const session = require('express-session');
-const RedisStore = require('connect-redis').default;
-const { createClient } = require('redis');
 
 const app = express()
 
-// Initialize Redis client
-const redisClient = createClient({
-    url: process.env.REDIS_URL || 'redis://localhost:6379'
-});
-
-redisClient.connect().catch(console.error);
-
-// CORS configuration
 app.use(cors({
     origin: 'https://root-beer-club.vercel.app',
     credentials: true
@@ -23,9 +13,8 @@ app.use(cors({
 
 app.use(express.json());
 
-// Session configuration with Redis store
+// Session configuration
 app.use(session({
-    store: new RedisStore({ client: redisClient }),
     secret: process.env.SESSION_SECRET || 'rootbeerclubsecret',
     resave: false,
     saveUninitialized: false,
