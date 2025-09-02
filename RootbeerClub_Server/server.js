@@ -3,28 +3,38 @@ const cors = require("cors");
 const { Pool } = require("pg")
 require('dotenv').config()
 const session = require('express-session');
+const RedisStore = require('connect-redis').default;
+const { createClient } = require('redis');
 
 const app = express()
 
-// CORS FIRST - before any other middleware
+// Initialize Redis client
+const redisClient = createClient({
+    url: process.env.REDIS_URL || 'redis://localhost:6379'
+});
+
+redisClient.connect().catch(console.error);
+
+// CORS configuration
 app.use(cors({
-  origin: 'https://root-beer-club.vercel.app',
-  credentials: true
+    origin: 'https://root-beer-club.vercel.app',
+    credentials: true
 }));
 
-app.use(express.json())
+app.use(express.json());
 
-// Session configuration
+// Session configuration with Redis store
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'rootbeerclubsecret',
-  resave: false,
-  saveUninitialized: false, // changed from true
-  cookie: {
-    secure: true,
-    sameSite: 'none', // changed from 'lax'
-    maxAge: 24 * 60 * 60 * 1000,
-    httpOnly: true
-  }
+    store: new RedisStore({ client: redisClient }),
+    secret: process.env.SESSION_SECRET || 'rootbeerclubsecret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: true,
+        sameSite: 'none',
+        maxAge: 24 * 60 * 60 * 1000,
+        httpOnly: true
+    }
 }));
 
 // PostgreSQL connection configuration
