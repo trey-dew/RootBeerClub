@@ -311,9 +311,11 @@ app.delete("/users/:id", async (req, res) => {
 
 // Login endpoint
 app.post("/login", async (req, res) => {
+    console.log('📍 Login attempt:', { email: req.body.email });
     try {
         const { email, password } = req.body;
         if (!email || !password) {
+            console.log('❌ Login failed: Missing email or password');
             return res.status(400).json({ error: 'Email and password are required' });
         }
         const result = await pool.query(
@@ -321,24 +323,30 @@ app.post("/login", async (req, res) => {
             [email, password]
         );
         if (result.rows.length === 0) {
+            console.log('❌ Login failed: Invalid credentials');
             return res.status(401).json({ error: 'Invalid email or password' });
         }
         const user = result.rows[0];
         delete user.password;
-        // is_admin is now included in user object
         req.session.user = user;
+        console.log('✅ Login successful:', { userId: user.user_id });
+        console.log('📍 Session after login:', req.session);
         res.json({ message: 'Login successful', user });
     } catch (err) {
-        console.error('Error during login:', err);
+        console.error('💥 Error during login:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // Get current logged-in user
 app.get('/me', (req, res) => {
+    console.log('📍 /me endpoint hit');
+    console.log('📍 Session data:', req.session);
     if (req.session.user) {
+        console.log('✅ User found in session:', req.session.user.user_id);
         res.json({ user: req.session.user });
     } else {
+        console.log('❌ No user in session');
         res.status(401).json({ error: 'Not logged in' });
     }
 });

@@ -29,16 +29,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const fetchUser = async () => {
+    console.log('📍 Fetching user');
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/me`, { credentials: 'include' });
+      console.log('📍 /me response status:', res.status);
+      
       if (res.ok) {
         const data = await res.json();
+        console.log('✅ User fetched:', data);
         setUser(data.user);
       } else {
+        console.log('❌ No user found');
         setUser(null);
       }
-    } catch {
+    } catch (error) {
+      console.error('💥 Error fetching user:', error);
       setUser(null);
     }
     setLoading(false);
@@ -49,25 +55,33 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
+    console.log('📍 Login attempt started');
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
-      if (res.ok) {
-        await fetchUser();
-        setLoading(false);
-        return true;
-      } else {
+        const res = await fetch(`${API_BASE_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ email, password }),
+        });
+        console.log('📍 Login response status:', res.status);
+        
+        if (res.ok) {
+            const data = await res.json();
+            console.log('✅ Login successful:', data);
+            await fetchUser();
+            setLoading(false);
+            return true;
+        } else {
+            const error = await res.json();
+            console.log('❌ Login failed:', error);
+            setLoading(false);
+            return false;
+        }
+    } catch (error) {
+        console.error('💥 Login error:', error);
         setLoading(false);
         return false;
-      }
-    } catch {
-      setLoading(false);
-      return false;
     }
   };
 
@@ -86,4 +100,4 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {children}
     </UserContext.Provider>
   );
-}; 
+};
