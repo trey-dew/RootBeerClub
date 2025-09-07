@@ -3,9 +3,11 @@ import { useUser } from './UserContext';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface User {
+  id: number;
   email: string;
-  is_admin?: boolean;
-  // ...other user fields if needed
+  isAdmin: boolean;  // Changed from is_admin to match JWT token
+  firstName: string;
+  lastName: string;
 }
 
 interface RootBeer {
@@ -234,6 +236,24 @@ const RootBeerListPage = () => {
         <p className="text-xl text-gray-600">Discover and explore our collection of root beers</p>
       </div>
 
+      {/* Add admin controls at the top - updated check for isAdmin */}
+      {user?.isAdmin && (
+        <div className="mb-8 text-center flex flex-row items-center justify-center gap-4">
+          <button
+            className="px-4 py-2 bg-rootbeer-600 text-white rounded-lg hover:bg-rootbeer-700 transition-colors"
+            onClick={() => setShowForm((v) => !v)}
+          >
+            {showForm ? 'Cancel' : '➕ Add Root Beer'}
+          </button>
+          <button
+            className="px-4 py-2 bg-rootbeer-600 text-white rounded-lg hover:bg-rootbeer-700 transition-colors"
+            onClick={() => setShowUpdate((v) => !v)}
+          >
+            {showUpdate ? 'Cancel' : '✏️ Update Root Beer'}
+          </button>
+        </div>
+      )}
+
       {/* Search and filter controls - centered row */}
       <div className="mb-12 flex justify-center w-full">
         <div className="flex flex-col md:flex-row md:items-center gap-4 w-full max-w-5xl justify-center">
@@ -302,7 +322,7 @@ const RootBeerListPage = () => {
           </div>
         </div>
       </div>
-        {user?.is_admin && (
+        {user?.isAdmin && (
           <div className="mb-8 text-center flex flex-row items-center justify-center gap-4">
             <button
               className="btn btn-primary"
@@ -319,7 +339,7 @@ const RootBeerListPage = () => {
           </div>
         )}
 
-      {showUpdate && user?.is_admin && (
+      {showUpdate && user?.isAdmin && (
         <div className="max-w-lg mx-auto mb-8 bg-white p-6 rounded-xl shadow space-y-4">
           <div>
             <label className="block font-semibold mb-1">Search Root Beer by Name</label>
@@ -427,7 +447,7 @@ const RootBeerListPage = () => {
         </div>
       )}
 
-      {showForm && user?.is_admin && (
+      {showForm && user?.isAdmin && (
         <form onSubmit={handleFormSubmit} className="max-w-lg mx-auto mb-8 bg-white p-6 rounded-xl shadow space-y-4">
           <div>
             <label className="block font-semibold mb-1">Name</label>
