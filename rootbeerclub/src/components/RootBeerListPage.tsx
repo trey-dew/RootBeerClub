@@ -33,7 +33,6 @@ const RootBeerListPage = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [showUpdate, setShowUpdate] = useState(false);
-  const [updateSearch, setUpdateSearch] = useState('');
   const [selectedRootBeer, setSelectedRootBeer] = useState<RootBeer | null>(null);
   const [updateForm, setUpdateForm] = useState({ name: '', rating: '', logo: '', rootbeer_facts: '', nutrition_facts: '', is_rootbeer: true });
   const [updateFormError, setUpdateFormError] = useState<string | null>(null);
@@ -236,24 +235,6 @@ const RootBeerListPage = () => {
         <p className="text-xl text-gray-600">Discover and explore our collection of root beers</p>
       </div>
 
-      {/* Add admin controls at the top - updated check for isAdmin */}
-      {user?.isAdmin && (
-        <div className="mb-8 text-center flex flex-row items-center justify-center gap-4">
-          <button
-            className="px-4 py-2 bg-rootbeer-600 text-white rounded-lg hover:bg-rootbeer-700 transition-colors"
-            onClick={() => setShowForm((v) => !v)}
-          >
-            {showForm ? 'Cancel' : '➕ Add Root Beer'}
-          </button>
-          <button
-            className="px-4 py-2 bg-rootbeer-600 text-white rounded-lg hover:bg-rootbeer-700 transition-colors"
-            onClick={() => setShowUpdate((v) => !v)}
-          >
-            {showUpdate ? 'Cancel' : '✏️ Update Root Beer'}
-          </button>
-        </div>
-      )}
-
       {/* Search and filter controls - centered row */}
       <div className="mb-12 flex justify-center w-full">
         <div className="flex flex-col md:flex-row md:items-center gap-4 w-full max-w-5xl justify-center">
@@ -345,24 +326,30 @@ const RootBeerListPage = () => {
             <label className="block font-semibold mb-1">Search Root Beer by Name</label>
             <input
               type="text"
-              value={updateSearch}
-              onChange={e => setUpdateSearch(e.target.value)}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full border px-3 py-2 rounded"
               placeholder="Type to search..."
             />
           </div>
-          {updateSearch && (
+          {searchTerm && (
             <div className="border rounded bg-gray-50 max-h-40 overflow-y-auto">
-              {rootBeers.filter(b => b.name.toLowerCase().includes(updateSearch.toLowerCase())).map(b => (
-                <div
-                  key={b.rootbeer_id}
-                  className={`px-3 py-2 cursor-pointer hover:bg-rootbeer-100 ${selectedRootBeer?.rootbeer_id === b.rootbeer_id ? 'bg-rootbeer-200' : ''}`}
-                  onClick={() => handleSelectRootBeer(b)}
-                >
-                  {b.name}
-                </div>
-              ))}
-              {rootBeers.filter(b => b.name.toLowerCase().includes(updateSearch.toLowerCase())).length === 0 && (
+              {displayedRootBeers
+                .filter(b => b.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                .map(b => (
+                  <div
+                    key={b.rootbeer_id}
+                    className={`px-3 py-2 cursor-pointer hover:bg-rootbeer-100 ${
+                      selectedRootBeer?.rootbeer_id === b.rootbeer_id ? 'bg-rootbeer-200' : ''
+                    }`}
+                    onClick={() => handleSelectRootBeer(b)}
+                  >
+                    {b.name}
+                  </div>
+                ))}
+              {displayedRootBeers.filter(b => 
+                b.name.toLowerCase().includes(searchTerm.toLowerCase())
+              ).length === 0 && (
                 <div className="px-3 py-2 text-gray-400">No matches found.</div>
               )}
             </div>
