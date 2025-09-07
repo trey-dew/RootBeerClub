@@ -1,11 +1,13 @@
 const express = require("express")
 const cors = require("cors");
 const { Pool } = require("pg")
+const jwt = require('jsonwebtoken');
 require('dotenv').config()
-const session = require('express-session');
-const pgSession = require('connect-pg-simple')(session);
 
-// PostgreSQL connection configuration - MOVE THIS UP
+// Add JWT secret to your environment variables
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+// PostgreSQL connection configuration
 const pool = new Pool({
     user: process.env.DB_USER,
     host: process.env.DB_HOST,
@@ -19,13 +21,21 @@ const pool = new Pool({
 
 // Authentication middleware
 const authenticateUser = (req, res, next) => {
-    console.log('🔒 Checking authentication');
-    console.log('Session:', req.session);
-    if (!req.session.user) {
-        console.log('❌ Authentication failed: No session user');
-        return res.status(401).json({ error: 'Authentication required' });
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        console.log('❌ Authentication failed: No token provided');
+        return res.status(401).json({ error: 'No token provided' });
     }
-    next();
+
+    const token = authHeader.split(' ')[1];
+    try {
+        const user = jwt.verify(token, JWT_SECRET);
+        req.user = user;
+        next();
+    } catch (err) {
+        console.log('❌ Authentication failed: Invalid token');
+        return res.status(401).json({ error: 'Invalid token' });
+    }
 };
 
 const app = express()
@@ -36,38 +46,6 @@ app.use(cors({
 }));
 
 app.use(express.json());
-
-// Session configuration - update this block
-app.use(session({
-    store: new pgSession({
-        pool,
-        createTableIfMissing: true,  // This will create the session table if it doesn't exist
-        tableName: 'session'   // Use the table we created
-    }),
-    name: 'sessionId',
-    secret: process.env.SESSION_SECRET || 'rootbeerclubsecret',
-    resave: false,
-    saveUninitialized: false,
-    proxy: true, // Required for Render deployment
-    cookie: {
-        secure: true,
-        sameSite: 'none',
-        maxAge: 24 * 60 * 60 * 1000,
-        httpOnly: true,
-        domain: '.onrender.com' // Specific to your Render deployment
-    }
-}));
-
-// Add session debugging middleware right after
-app.use((req, res, next) => {
-    console.log('🔍 Session Debug:', {
-        sessionID: req.sessionID,
-        hasSession: !!req.session,
-        user: req.session?.user,
-        cookie: req.session?.cookie
-    });
-    next();
-});
 
 // Test database connection
 pool.query('SELECT NOW()', (err, res) => {
@@ -334,7 +312,7 @@ app.delete("/users/:id", async (req, res) => {
         console.error('Error deleting user:', err)
         res.status(500).json({ error: 'Internal server error' })
     }
-})
+});
 
 // Login endpoint
 app.post("/login", async (req, res) => {
@@ -342,13 +320,11 @@ app.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
         
-        // Input validation
         if (!email || !password) {
             console.log('❌ Login failed: Missing credentials');
             return res.status(400).json({ error: 'Email and password are required' });
         }
 
-        // Find user
         const result = await pool.query(
             'SELECT * FROM userinfo WHERE email = $1',
             [email]
@@ -361,29 +337,32 @@ app.post("/login", async (req, res) => {
 
         const user = result.rows[0];
 
-        // Check password (in real production, use bcrypt)
         if (user.password !== password) {
             console.log('❌ Login failed: Invalid password');
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        // Create session
-        const userSession = {
+        // Create JWT token
+        const token = jwt.sign({
             id: user.user_id,
             email: user.email,
             isAdmin: user.is_admin,
             firstName: user.firstname,
             lastName: user.lastname
-        };
-
-        req.session.user = userSession;
+        }, JWT_SECRET, { expiresIn: '24h' });
         
         console.log('✅ Login successful:', { userId: user.user_id });
-        console.log('📍 Session created:', req.session);
 
         res.json({
             message: 'Login successful',
-            user: userSession
+            token,
+            user: {
+                id: user.user_id,
+                email: user.email,
+                isAdmin: user.is_admin,
+                firstName: user.firstname,
+                lastName: user.lastname
+            }
         });
     } catch (err) {
         console.error('💥 Error during login:', err);
@@ -391,34 +370,10 @@ app.post("/login", async (req, res) => {
     }
 });
 
-// Get current logged-in user
+// Update /me endpoint to use JWT
 app.get('/me', authenticateUser, (req, res) => {
     console.log('📍 /me endpoint hit');
-    console.log('📍 Session data:', req.session);
-    if (req.session.user) {
-        console.log('✅ User found in session:', req.session.user.user_id);
-        res.json({ user: req.session.user });
-    } else {
-        console.log('❌ No user in session');
-        res.status(401).json({ error: 'Not logged in' });
-    }
-});
-// Logout endpoint
-app.post('/logout', (req, res) => {
-    console.log('📍 Logout attempt');
-    if (req.session) {
-        req.session.destroy(err => {
-            if (err) {
-                console.error('❌ Logout error:', err);
-                return res.status(500).json({ error: 'Logout failed' });
-            }
-            res.clearCookie('sessionId');
-            console.log('✅ Logout successful');
-            res.json({ message: 'Logged out successfully' });
-        });
-    } else {
-        res.json({ message: 'Already logged out' });
-    }
+    res.json({ user: req.user });
 });
 
 // Get top 10 ratings for a user

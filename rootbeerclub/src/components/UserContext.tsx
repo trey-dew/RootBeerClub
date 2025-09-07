@@ -54,6 +54,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetchUser();
   }, []);
 
+  interface LoginResponse {
+    token: string;
+    user: User;
+    message: string;
+  }
+
   const login = async (email: string, password: string) => {
     console.log('📍 Login attempt started');
     setLoading(true);
@@ -61,14 +67,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const res = await fetch(`${API_BASE_URL}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({ email, password }),
         });
         console.log('📍 Login response status:', res.status);
         
         if (res.ok) {
-            const data = await res.json();
-            console.log('✅ Login successful:', data);
+            const data: LoginResponse = await res.json();
+            localStorage.setItem('token', data.token);
+            setUser(data.user);
             await fetchUser();
             setLoading(false);
             return true;
