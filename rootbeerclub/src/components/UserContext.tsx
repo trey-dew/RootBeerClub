@@ -3,9 +3,10 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface User {
   id: number;
-  firstname: string;
-  lastname: string;
   email: string;
+  firstName: string;  // Changed from firstname
+  lastName: string;   // Changed from lastname
+  isAdmin: boolean;
 }
 
 interface UserContextType {

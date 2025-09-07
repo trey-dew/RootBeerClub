@@ -79,7 +79,7 @@ const Navigation = () => {
           </li>
           {user ? (
             <>
-              <li className="text-gray-700 font-medium">Logged in as {user.firstname}</li>
+              <li className="text-gray-700 font-medium">Logged in as {user.firstName}</li>
               <li>
                 <button
                   onClick={logout}
