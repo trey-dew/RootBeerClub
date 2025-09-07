@@ -3,6 +3,7 @@ const cors = require("cors");
 const { Pool } = require("pg")
 require('dotenv').config()
 const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session);
 
 // Move authenticateUser middleware to the top
 const authenticateUser = (req, res, next) => {
@@ -24,14 +25,18 @@ app.use(cors({
 
 app.use(express.json());
 
-// Session configuration
+// Session configuration - update this block
 app.use(session({
+    store: new pgSession({
+        pool,
+        tableName: 'session'   // Use the table we created
+    }),
     secret: process.env.SESSION_SECRET || 'rootbeerclubsecret',
-    resave: true,  // Changed to true
-    saveUninitialized: true,  // Changed to true
+    resave: false,
+    saveUninitialized: false,
     cookie: {
-        secure: true,  // Always true since we're on HTTPS
-        sameSite: 'none',  // Always 'none' for cross-origin
+        secure: true,
+        sameSite: 'none',
         maxAge: 24 * 60 * 60 * 1000,
         httpOnly: true
     },
