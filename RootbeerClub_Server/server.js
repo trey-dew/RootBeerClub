@@ -19,11 +19,12 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: true,
-        sameSite: 'none',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 24 * 60 * 60 * 1000,
         httpOnly: true
-    }
+    },
+    name: 'sessionId' // This helps identify your cookie
 }));
 
 // PostgreSQL connection configuration
@@ -267,7 +268,7 @@ app.get("/users/:id", async (req, res) => {
 })
 
 // Update user
-app.put("/users/:id", async (req, res) => {
+app.put("/users/:id", authenticateUser, async (req, res) => {
     try {
         const { id } = req.params
         const { firstname, lastname, password, is_admin, about } = req.body
@@ -310,24 +311,50 @@ app.post("/login", async (req, res) => {
     console.log('📍 Login attempt:', { email: req.body.email });
     try {
         const { email, password } = req.body;
+        
+        // Input validation
         if (!email || !password) {
-            console.log('❌ Login failed: Missing email or password');
+            console.log('❌ Login failed: Missing credentials');
             return res.status(400).json({ error: 'Email and password are required' });
         }
+
+        // Find user
         const result = await pool.query(
-            'SELECT * FROM userinfo WHERE email = $1 AND password = $2',
-            [email, password]
+            'SELECT * FROM userinfo WHERE email = $1',
+            [email]
         );
+
         if (result.rows.length === 0) {
-            console.log('❌ Login failed: Invalid credentials');
-            return res.status(401).json({ error: 'Invalid email or password' });
+            console.log('❌ Login failed: User not found');
+            return res.status(401).json({ error: 'Invalid credentials' });
         }
+
         const user = result.rows[0];
-        delete user.password;
-        req.session.user = user;
+
+        // Check password (in real production, use bcrypt)
+        if (user.password !== password) {
+            console.log('❌ Login failed: Invalid password');
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Create session
+        const userSession = {
+            id: user.user_id,
+            email: user.email,
+            isAdmin: user.is_admin,
+            firstName: user.firstname,
+            lastName: user.lastname
+        };
+
+        req.session.user = userSession;
+        
         console.log('✅ Login successful:', { userId: user.user_id });
-        console.log('📍 Session after login:', req.session);
-        res.json({ message: 'Login successful', user });
+        console.log('📍 Session created:', req.session);
+
+        res.json({
+            message: 'Login successful',
+            user: userSession
+        });
     } catch (err) {
         console.error('💥 Error during login:', err);
         res.status(500).json({ error: 'Internal server error' });
@@ -335,7 +362,7 @@ app.post("/login", async (req, res) => {
 });
 
 // Get current logged-in user
-app.get('/me', (req, res) => {
+app.get('/me', authenticateUser, (req, res) => {
     console.log('📍 /me endpoint hit');
     console.log('📍 Session data:', req.session);
     if (req.session.user) {
@@ -348,12 +375,20 @@ app.get('/me', (req, res) => {
 });
 // Logout endpoint
 app.post('/logout', (req, res) => {
-    req.session.destroy(err => {
-        if (err) {
-            return res.status(500).json({ error: 'Logout failed' });
-        }
-        res.json({ message: 'Logged out' });
-    });
+    console.log('📍 Logout attempt');
+    if (req.session) {
+        req.session.destroy(err => {
+            if (err) {
+                console.error('❌ Logout error:', err);
+                return res.status(500).json({ error: 'Logout failed' });
+            }
+            res.clearCookie('sessionId');
+            console.log('✅ Logout successful');
+            res.json({ message: 'Logged out successfully' });
+        });
+    } else {
+        res.json({ message: 'Already logged out' });
+    }
 });
 
 // Get top 10 ratings for a user
@@ -425,6 +460,17 @@ app.delete("/ratings/:rating_id", async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+// Add this after your imports
+const authenticateUser = (req, res, next) => {
+    console.log('🔒 Checking authentication');
+    console.log('Session:', req.session);
+    if (!req.session.user) {
+        console.log('❌ Authentication failed: No session user');
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+    next();
+};
 
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => console.log(`Server running on localhost:${PORT}`))
