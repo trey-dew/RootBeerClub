@@ -41,26 +41,30 @@ app.use(express.json());
 app.use(session({
     store: new pgSession({
         pool,
+        createTableIfMissing: true,  // This will create the session table if it doesn't exist
         tableName: 'session'   // Use the table we created
     }),
+    name: 'sessionId',
     secret: process.env.SESSION_SECRET || 'rootbeerclubsecret',
     resave: false,
     saveUninitialized: false,
+    proxy: true, // Required for Render deployment
     cookie: {
         secure: true,
         sameSite: 'none',
         maxAge: 24 * 60 * 60 * 1000,
-        httpOnly: true
-    },
-    name: 'sessionId'
+        httpOnly: true,
+        domain: '.onrender.com' // Specific to your Render deployment
+    }
 }));
 
-// Add this right after session middleware to debug session data
+// Add session debugging middleware right after
 app.use((req, res, next) => {
-    console.log('🔍 Current session:', {
-        id: req.sessionID,
-        cookie: req.session.cookie,
-        user: req.session.user
+    console.log('🔍 Session Debug:', {
+        sessionID: req.sessionID,
+        hasSession: !!req.session,
+        user: req.session?.user,
+        cookie: req.session?.cookie
     });
     next();
 });
