@@ -4,6 +4,17 @@ const { Pool } = require("pg")
 require('dotenv').config()
 const session = require('express-session');
 
+// Move authenticateUser middleware to the top
+const authenticateUser = (req, res, next) => {
+    console.log('🔒 Checking authentication');
+    console.log('Session:', req.session);
+    if (!req.session.user) {
+        console.log('❌ Authentication failed: No session user');
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+    next();
+};
+
 const app = express()
 
 app.use(cors({
@@ -460,17 +471,6 @@ app.delete("/ratings/:rating_id", async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-
-// Add this after your imports
-const authenticateUser = (req, res, next) => {
-    console.log('🔒 Checking authentication');
-    console.log('Session:', req.session);
-    if (!req.session.user) {
-        console.log('❌ Authentication failed: No session user');
-        return res.status(401).json({ error: 'Authentication required' });
-    }
-    next();
-};
 
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => console.log(`Server running on localhost:${PORT}`))
