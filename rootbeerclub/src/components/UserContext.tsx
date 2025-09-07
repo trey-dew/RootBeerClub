@@ -31,21 +31,29 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUser = async () => {
     console.log('📍 Fetching user');
     setLoading(true);
+    const token = localStorage.getItem('token');
+    
     try {
-      const res = await fetch(`${API_BASE_URL}/me`, { credentials: 'include' });
-      console.log('📍 /me response status:', res.status);
-      
-      if (res.ok) {
-        const data = await res.json();
-        console.log('✅ User fetched:', data);
-        setUser(data.user);
-      } else {
-        console.log('❌ No user found');
-        setUser(null);
-      }
+        const res = await fetch(`${API_BASE_URL}/me`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        console.log('📍 /me response status:', res.status);
+        
+        if (res.ok) {
+            const data = await res.json();
+            console.log('✅ User fetched:', data);
+            setUser(data.user);
+        } else {
+            console.log('❌ No user found');
+            setUser(null);
+            localStorage.removeItem('token'); // Clear invalid token
+        }
     } catch (error) {
-      console.error('💥 Error fetching user:', error);
-      setUser(null);
+        console.error('💥 Error fetching user:', error);
+        setUser(null);
+        localStorage.removeItem('token'); // Clear token on error
     }
     setLoading(false);
   };
@@ -75,7 +83,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const data: LoginResponse = await res.json();
             localStorage.setItem('token', data.token);
             setUser(data.user);
-            await fetchUser();
             setLoading(false);
             return true;
         } else {
@@ -93,10 +100,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     setLoading(true);
-    await fetch(`${API_BASE_URL}/logout`, {
-      method: 'POST',
-      credentials: 'include',
-    });
+    localStorage.removeItem('token'); // Remove token on logout
     setUser(null);
     setLoading(false);
   };
