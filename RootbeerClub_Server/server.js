@@ -27,16 +27,26 @@ app.use(express.json());
 // Session configuration
 app.use(session({
     secret: process.env.SESSION_SECRET || 'rootbeerclubsecret',
-    resave: false,
-    saveUninitialized: false,
+    resave: true,  // Changed to true
+    saveUninitialized: true,  // Changed to true
     cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: true,  // Always true since we're on HTTPS
+        sameSite: 'none',  // Always 'none' for cross-origin
         maxAge: 24 * 60 * 60 * 1000,
         httpOnly: true
     },
-    name: 'sessionId' // This helps identify your cookie
+    name: 'sessionId'
 }));
+
+// Add this right after session middleware to debug session data
+app.use((req, res, next) => {
+    console.log('🔍 Current session:', {
+        id: req.sessionID,
+        cookie: req.session.cookie,
+        user: req.session.user
+    });
+    next();
+});
 
 // PostgreSQL connection configuration
 const pool = new Pool({
