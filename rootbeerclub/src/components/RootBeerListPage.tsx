@@ -46,9 +46,7 @@ const RootBeerListPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const username = import.meta.env.VITE_API_USERNAME;
-      const password = import.meta.env.VITE_API_PASSWORD;
-      const basicAuth = btoa(`${username}:${password}`);
+      const token = localStorage.getItem('token');
       const params = new URLSearchParams({
         page: page.toString(),
         pageSize: pageSize.toString(),
@@ -67,7 +65,7 @@ const RootBeerListPage = () => {
       }
       const res = await fetch(`${API_BASE_URL}/rootbeers?${params.toString()}`, {
         headers: {
-          'Authorization': `Basic ${basicAuth}`
+          'Authorization': `Bearer ${token}`
         }
       });
       if (!res.ok) throw new Error('Failed to fetch root beers');
@@ -112,6 +110,7 @@ const RootBeerListPage = () => {
     }
   };
 
+  // Update handleFormSubmit
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -122,14 +121,12 @@ const RootBeerListPage = () => {
         setFormLoading(false);
         return;
       }
-      const username = import.meta.env.VITE_API_USERNAME;
-      const password = import.meta.env.VITE_API_PASSWORD;
-      const basicAuth = btoa(`${username}:${password}`);
+      const token = localStorage.getItem('token');
       const res = await fetch(`${API_BASE_URL}/rootbeers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${basicAuth}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           name: form.name,
@@ -178,6 +175,7 @@ const RootBeerListPage = () => {
     });
   };
 
+  // Update handleUpdateFormSubmit
   const handleUpdateFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUpdateFormError(null);
@@ -193,14 +191,12 @@ const RootBeerListPage = () => {
         setUpdateFormLoading(false);
         return;
       }
-      const username = import.meta.env.VITE_API_USERNAME;
-      const password = import.meta.env.VITE_API_PASSWORD;
-      const basicAuth = btoa(`${username}:${password}`);
-      const res = await fetch(`${API_BASE_URL}rootbeers/${selectedRootBeer.rootbeer_id}`, {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/rootbeers/${selectedRootBeer.rootbeer_id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${basicAuth}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           name: updateForm.name,

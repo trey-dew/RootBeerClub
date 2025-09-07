@@ -23,8 +23,8 @@ interface Rating {
 
 interface UserInfo {
   user_id: number;
-  firstname: string;
-  lastname: string;
+  firstName: string;
+  lastName: string;
 }
 
 const RootBeerDetailsPage: React.FC = () => {
@@ -39,16 +39,21 @@ const RootBeerDetailsPage: React.FC = () => {
   useEffect(() => {
     const fetchDetails = async () => {
       try {
-        const rbRes = await fetch(`${API_BASE_URL}/rootbeers/${rootbeer_id}`);
+        const token = localStorage.getItem('token');
+        const headers = {
+          'Authorization': `Bearer ${token}`
+        };
+
+        const rbRes = await fetch(`${API_BASE_URL}/rootbeers/${rootbeer_id}`, { headers });
         if (!rbRes.ok) throw new Error('Rootbeer not found');
         const rbData = await rbRes.json();
         setRootbeer(rbData);
 
-        const ratingsRes = await fetch(`${API_BASE_URL}/ratings`);
+        const ratingsRes = await fetch(`${API_BASE_URL}/ratings`, { headers });
         const ratingsData: Rating[] = await ratingsRes.json();
         setRatings(ratingsData.filter(r => r.rootbeer_id === Number(rootbeer_id)));
 
-        const usersRes = await fetch(`${API_BASE_URL}/users`);
+        const usersRes = await fetch(`${API_BASE_URL}/users`, { headers });
         const usersData: UserInfo[] = await usersRes.json();
         setUsers(usersData);
       } catch (err: any) {
@@ -115,7 +120,7 @@ const RootBeerDetailsPage: React.FC = () => {
           <ul className="space-y-2">
             {ratings.map(r => {
               const judge = users.find(u => u.user_id === r.user_id);
-              const judgeName = judge ? `${judge.firstname} ${judge.lastname}` : `Judge ID: ${r.user_id}`;
+              const judgeName = judge ? `${judge.firstName} ${judge.lastName}` : `Judge ID: ${r.user_id}`;
               return (
                 <li key={r.rating_id} className="border rounded p-2">
                   <p className="font-medium">Rating: {r.rating}</p>
