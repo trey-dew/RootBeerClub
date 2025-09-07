@@ -5,7 +5,19 @@ require('dotenv').config()
 const session = require('express-session');
 const pgSession = require('connect-pg-simple')(session);
 
-// Move authenticateUser middleware to the top
+// PostgreSQL connection configuration - MOVE THIS UP
+const pool = new Pool({
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 5432,
+    ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 5000,
+    idleTimeoutMillis: 30000,
+})
+
+// Authentication middleware
 const authenticateUser = (req, res, next) => {
     console.log('🔒 Checking authentication');
     console.log('Session:', req.session);
@@ -52,18 +64,6 @@ app.use((req, res, next) => {
     });
     next();
 });
-
-// PostgreSQL connection configuration
-const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 5432,
-    ssl: { rejectUnauthorized: false }, // Supabase requires SSL
-    connectionTimeoutMillis: 5000,
-    idleTimeoutMillis: 30000,
-})
 
 // Test database connection
 pool.query('SELECT NOW()', (err, res) => {
