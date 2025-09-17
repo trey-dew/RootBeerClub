@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useUser } from './UserContext'; // Add this import
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface RootBeer {
@@ -30,6 +31,7 @@ interface UserInfo {
 const RootBeerDetailsPage: React.FC = () => {
   const { rootbeer_id } = useParams<{ rootbeer_id: string }>();
   const navigate = useNavigate();
+  const { user } = useUser(); // Add this hook
   const [rootbeer, setRootbeer] = useState<RootBeer | null>(null);
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,35 +40,105 @@ const RootBeerDetailsPage: React.FC = () => {
 
   useEffect(() => {
     const fetchDetails = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const headers = {
-          'Authorization': `Bearer ${token}`
-        };
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Authentication required');
+        setLoading(false);
+        return;
+      }
 
-        const rbRes = await fetch(`${API_BASE_URL}/rootbeers/${rootbeer_id}`, { headers });
-        if (!rbRes.ok) throw new Error('Rootbeer not found');
+      try {
+        // Fetch rootbeer details
+        const rbRes = await fetch(`${API_BASE_URL}/rootbeers/${rootbeer_id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!rbRes.ok) {
+          if (rbRes.status === 404) {
+            throw new Error('Root beer not found');
+          }
+          throw new Error('Failed to fetch root beer details');
+        }
+
         const rbData = await rbRes.json();
         setRootbeer(rbData);
 
-        const ratingsRes = await fetch(`${API_BASE_URL}/ratings`, { headers });
+        // Fetch ratings
+        const ratingsRes = await fetch(`${API_BASE_URL}/ratings`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!ratingsRes.ok) {
+          throw new Error('Failed to fetch ratings');
+        }
+
         const ratingsData: Rating[] = await ratingsRes.json();
         setRatings(ratingsData.filter(r => r.rootbeer_id === Number(rootbeer_id)));
 
-        const usersRes = await fetch(`${API_BASE_URL}/users`, { headers });
+        // Fetch users
+        const usersRes = await fetch(`${API_BASE_URL}/users`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!usersRes.ok) {
+          throw new Error('Failed to fetch users');
+        }
+
         const usersData: UserInfo[] = await usersRes.json();
         setUsers(usersData);
+
       } catch (err: any) {
-        setError(err.message);
+        console.error('Error fetching details:', err);
+        setError(err.message || 'An error occurred');
+        if (err.message.includes('not found')) {
+          navigate('/rootbeers');
+        }
       } finally {
         setLoading(false);
       }
     };
-    fetchDetails();
-  }, [rootbeer_id]);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div className="text-red-500">Error: {error}</div>;
+    fetchDetails();
+  }, [rootbeer_id, navigate]);
+
+  // Add loading states with better UI feedback
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto p-6 text-center">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto mb-4"></div>
+          <div className="h-64 bg-gray-200 rounded mb-4"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
+          <button
+            onClick={() => navigate('/rootbeers')}
+            className="mt-3 bg-red-100 px-4 py-2 rounded hover:bg-red-200 transition"
+          >
+            Return to Root Beers
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!rootbeer) return <div>Rootbeer not found.</div>;
 
   return (

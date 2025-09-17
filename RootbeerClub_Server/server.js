@@ -40,9 +40,13 @@ const authenticateUser = (req, res, next) => {
 
 const app = express()
 
+// Update the CORS configuration
 app.use(cors({
-    origin: 'https://root-beer-club.vercel.app',
-    credentials: true
+  origin: [
+    'http://localhost:5173',  // Vite's default development port
+    'https://root-beer-club.vercel.app'  // Your production URL
+  ],
+  credentials: true
 }));
 
 app.use(express.json());
