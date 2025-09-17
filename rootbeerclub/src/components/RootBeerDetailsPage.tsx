@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useUser } from './UserContext'; // Add this import
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface RootBeer {
@@ -24,14 +23,13 @@ interface Rating {
 
 interface UserInfo {
   user_id: number;
-  firstName: string;
-  lastName: string;
+  firstname: string;  // Changed from firstName
+  lastname: string;   // Changed from lastName
 }
 
 const RootBeerDetailsPage: React.FC = () => {
   const { rootbeer_id } = useParams<{ rootbeer_id: string }>();
   const navigate = useNavigate();
-  const { user } = useUser(); // Add this hook
   const [rootbeer, setRootbeer] = useState<RootBeer | null>(null);
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,21 +38,9 @@ const RootBeerDetailsPage: React.FC = () => {
 
   useEffect(() => {
     const fetchDetails = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Authentication required');
-        setLoading(false);
-        return;
-      }
-
       try {
-        // Fetch rootbeer details
-        const rbRes = await fetch(`${API_BASE_URL}/rootbeers/${rootbeer_id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        // Fetch rootbeer details - no auth required
+        const rbRes = await fetch(`${API_BASE_URL}/rootbeers/${rootbeer_id}`);
 
         if (!rbRes.ok) {
           if (rbRes.status === 404) {
@@ -66,13 +52,8 @@ const RootBeerDetailsPage: React.FC = () => {
         const rbData = await rbRes.json();
         setRootbeer(rbData);
 
-        // Fetch ratings
-        const ratingsRes = await fetch(`${API_BASE_URL}/ratings`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        // Fetch ratings - no auth required
+        const ratingsRes = await fetch(`${API_BASE_URL}/ratings`);
 
         if (!ratingsRes.ok) {
           throw new Error('Failed to fetch ratings');
@@ -81,13 +62,8 @@ const RootBeerDetailsPage: React.FC = () => {
         const ratingsData: Rating[] = await ratingsRes.json();
         setRatings(ratingsData.filter(r => r.rootbeer_id === Number(rootbeer_id)));
 
-        // Fetch users
-        const usersRes = await fetch(`${API_BASE_URL}/users`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        // Fetch users - no auth required for public info
+        const usersRes = await fetch(`${API_BASE_URL}/users`);
 
         if (!usersRes.ok) {
           throw new Error('Failed to fetch users');
@@ -192,7 +168,7 @@ const RootBeerDetailsPage: React.FC = () => {
           <ul className="space-y-2">
             {ratings.map(r => {
               const judge = users.find(u => u.user_id === r.user_id);
-              const judgeName = judge ? `${judge.firstName} ${judge.lastName}` : `Judge ID: ${r.user_id}`;
+              const judgeName = judge ? `${judge.firstname} ${judge.lastname}` : `Judge ID: ${r.user_id}`;
               return (
                 <li key={r.rating_id} className="border rounded p-2">
                   <p className="font-medium">Rating: {r.rating}</p>
