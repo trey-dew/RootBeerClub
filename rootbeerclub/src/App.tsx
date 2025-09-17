@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navigation from './components/Navigation';
 import HomePage from './components/HomePage';
 import RootBeerListPage from './components/RootBeerListPage';
@@ -23,6 +23,8 @@ function App() {
               <Route path="/rootbeers/:rootbeer_id" element={<RootBeerDetailsPage />} />
               <Route path="/judges" element={<JudgesPage />} />
               <Route path="/judges/:judgeId" element={<JudgeProfilePage />} />
+              {/* Add catch-all route */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
         </div>
