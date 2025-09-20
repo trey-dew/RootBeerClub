@@ -14,9 +14,9 @@ interface ScorecardData {
 }
 
 interface UserWithId {
-  user_id: number;
-  firstname: string;
-  lastname: string;
+  id: number;  // Changed from user_id to match JWT payload
+  firstName: string;  // Changed from firstname
+  lastName: string;   // Changed from lastname
 }
 
 const ScorecardPage = () => {
@@ -41,39 +41,59 @@ const [isRootbeer, setIsRootbeer] = useState(true);
     });
   };
 
+  // Add debug logging in the submit handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
-    if (!user || typeof user.user_id !== 'number') {
+    
+    console.log('Current user:', user); // Debug log
+    
+    if (!user || typeof user.id !== 'number') {  // Changed from user_id to id
       setSubmitError('You must be logged in to submit a rating.');
       return;
     }
+
     if (!scorecardData.rootBeerId) {
       setSubmitError('Please select a root beer.');
       return;
     }
+
     if (scorecardData.overallRating < 0 || scorecardData.overallRating > 10) {
       setSubmitError('Rating must be between 0 and 10. Decimals are allowed.');
       return;
     }
+
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setSubmitError('Authentication required. Please log in again.');
+        return;
+      }
+
       const res = await fetch(`${API_BASE_URL}/ratings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           rootbeer_id: scorecardData.rootBeerId,
           comment: scorecardData.notes,
           rating: scorecardData.overallRating,
-          user_id: user.user_id,
+          user_id: user.id,  // Changed from user.user_id to user.id
           is_rootbeer: isRootbeer
         })
       });
-      if (!res.ok) throw new Error('Failed to submit rating');
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to submit rating');
+      }
+
       alert('Scorecard submitted successfully!');
       setScorecardData({ rootBeerId: null, notes: '', overallRating: 0 });
       setSearchTerm('');
       setIsRootbeer(true);
-      // setSelectedUserId(null); // No longer needed
     } catch (err: any) {
       setSubmitError(err.message || 'Unknown error');
     }
@@ -82,10 +102,17 @@ const [isRootbeer, setIsRootbeer] = useState(true);
   useEffect(() => {
     const fetchRootbeers = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/rootbeers?all=true`);
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_BASE_URL}/rootbeers?all=true`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (!res.ok) throw new Error('Failed to fetch root beers');
         const data = await res.json();
-        setRootbeers(data.data); // This will now be ALL rootbeers
-      } catch {
+        setRootbeers(data.data);
+      } catch (error) {
+        console.error('Error fetching root beers:', error);
         setRootbeers([]);
       }
     };

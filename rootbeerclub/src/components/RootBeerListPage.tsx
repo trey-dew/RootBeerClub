@@ -236,73 +236,91 @@ const RootBeerListPage = () => {
       </div>
 
       {/* Search and filter controls - centered row */}
-      <div className="mb-12 flex justify-center w-full">
-        <div className="flex flex-col md:flex-row md:items-center gap-4 w-full max-w-5xl justify-center">
-          <input
-            type="text"
-            placeholder="Search root beers..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-grow px-5 py-2 border-2 border-gray-200 rounded-xl text-2xl bg-white shadow-lg transition-all duration-200 focus:outline-none focus:border-rootbeer-700 focus:shadow-xl min-w-[300px] max-w-[600px]"
-            style={{ flexBasis: '400px' }}
-          />
-          <div className="flex items-center bg-rootbeer-50 border border-rootbeer-100 rounded-xl shadow w-full md:w-auto">
-            {/* Sort By */}
-            <span className="font-semibold text-rootbeer-700 px-4 py-2">Sort</span>
-            <button
-              type="button"
-              className={`px-4 py-2 rounded-l-xl font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-rootbeer-400 ${sortBy === 'name' ? 'bg-rootbeer-700 text-white shadow' : 'bg-white text-rootbeer-700 hover:bg-rootbeer-100'}`}
-              onClick={() => setSortBy('name')}
-              style={{ borderRight: '1px solid #e5e7eb' }}
-            >
-              Name
-            </button>
-            <button
-              type="button"
-              className={`px-4 py-2 font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-rootbeer-400 ${sortBy === 'rating' ? 'bg-rootbeer-700 text-white shadow' : 'bg-white text-rootbeer-700 hover:bg-rootbeer-100'}`}
-              onClick={() => setSortBy('rating')}
-              style={{ borderRight: '1px solid #e5e7eb' }}
-            >
-              Rating
-            </button>
-            {/* Sort Order Toggle */}
-            <button
-              type="button"
-              className={`px-4 py-2 rounded-r-xl font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-rootbeer-400 flex items-center gap-1 ${sortOrder === 'asc' ? 'bg-white text-rootbeer-700 hover:bg-rootbeer-100' : 'bg-rootbeer-700 text-white shadow'}`}
-              onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
-              title={sortOrder === 'asc' ? 'Ascending (A→Z, 0→9)' : 'Descending (Z→A, 9→0)'}
-              aria-label="Toggle sort order"
-              style={{ borderLeft: '1px solid #e5e7eb' }}
-            >
-              {sortOrder === 'asc' ? (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
-                  <span className="text-xs">Asc</span>
-                </>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                  <span className="text-xs">Desc</span>
-                </>
-              )}
-            </button>
-            {/* Type Filter as dropdown */}
-            <span className="font-semibold text-rootbeer-700 px-4 py-2 border-l border-rootbeer-100">Type</span>
-            <select
-              value={filterRootbeer}
-              onChange={e => setFilterRootbeer(e.target.value as 'all' | 'rootbeer' | 'notrootbeer' | 'rated')}
-              className="px-4 py-2 rounded-xl font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-rootbeer-400 bg-white text-rootbeer-700 border border-rootbeer-200 ml-2 mr-4"
-              style={{ minWidth: 140 }}
-              aria-label="Filter by type"
-            >
-              <option value="all">All</option>
-              <option value="rootbeer">Root Beer Only</option>
-              <option value="notrootbeer">Not Root Beer</option>
-              <option value="rated">Reviewed</option>
-            </select>
-          </div>
+      <div className="mb-12 flex justify-center w-full px-4">
+  <div className="bg-rootbeer-50 rounded-xl shadow-lg p-4 w-full max-w-5xl">
+    <div className="flex flex-col md:flex-row md:items-center gap-4 w-full justify-center">
+      <input
+        type="text"
+        placeholder="Search root beers..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="flex-grow px-3 py-2 border-2 border-gray-200 rounded-xl 
+          text-base bg-white shadow transition-all duration-200 
+          focus:outline-none focus:border-rootbeer-700 focus:shadow-xl 
+          w-full md:min-w-[300px] md:max-w-[600px]"
+      />
+      <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+        <div className="flex items-center bg-white border border-rootbeer-100 
+          rounded-xl shadow-sm text-sm md:text-base w-full md:w-auto">
+          <span className="font-semibold text-rootbeer-700 px-4 py-2">Sort</span>
+          <button
+            type="button"
+            className={`px-4 py-2 rounded-l-xl font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-rootbeer-400 ${
+              sortBy === 'name' ? 'bg-rootbeer-700 text-white shadow' : 'text-rootbeer-700 hover:bg-rootbeer-50'
+            }`}
+            onClick={() => setSortBy('name')}
+            style={{ borderRight: '1px solid #e5e7eb' }}
+          >
+            Name
+          </button>
+          <button
+            type="button"
+            className={`px-4 py-2 font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-rootbeer-400 ${
+              sortBy === 'rating' ? 'bg-rootbeer-700 text-white shadow' : 'text-rootbeer-700 hover:bg-rootbeer-50'
+            }`}
+            onClick={() => setSortBy('rating')}
+            style={{ borderRight: '1px solid #e5e7eb' }}
+          >
+            Rating
+          </button>
+          <button
+            type="button"
+            className={`px-4 py-2 rounded-r-xl font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-rootbeer-400 flex items-center gap-1 ${
+              sortOrder === 'asc' ? 'text-rootbeer-700 hover:bg-rootbeer-50' : 'bg-rootbeer-700 text-white shadow'
+            }`}
+            onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
+            title={sortOrder === 'asc' ? 'Ascending (A→Z, 0→9)' : 'Descending (Z→A, 9→0)'}
+            aria-label="Toggle sort order"
+          >
+            {sortOrder === 'asc' ? (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+                <span className="text-xs">Asc</span>
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                <span className="text-xs">Desc</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        <div className="flex items-center bg-white border border-rootbeer-100 
+          rounded-xl shadow-sm text-sm md:text-base w-full md:w-auto">
+          <span className="font-semibold text-rootbeer-700 px-4 py-2">Type</span>
+          <select
+            value={filterRootbeer}
+            onChange={e => setFilterRootbeer(e.target.value as 'all' | 'rootbeer' | 'notrootbeer' | 'rated')}
+            className="flex-grow px-4 py-2 rounded-r-xl font-semibold transition-all duration-150 
+              focus:outline-none focus:ring-2 focus:ring-rootbeer-400 
+              text-rootbeer-700 border-l border-rootbeer-100"
+            aria-label="Filter by type"
+          >
+            <option value="all">All</option>
+            <option value="rootbeer">Root Beer Only</option>
+            <option value="notrootbeer">Not Root Beer</option>
+            <option value="rated">Reviewed</option>
+          </select>
         </div>
       </div>
+    </div>
+  </div>
+</div>
         {user?.isAdmin && (
           <div className="mb-8 text-center flex flex-row items-center justify-center gap-4">
             <button
