@@ -9,6 +9,7 @@ import LoginPage from './components/LoginPage';
 import { UserProvider } from './components/UserContext';
 import JudgesPage from './components/JudgesPage';
 import JudgeProfilePage from './components/JudgeProfilePage';
+import ClubStatsPage from './components/ClubStatsPage';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
               <Route path="/rootbeers/:rootbeer_id" element={<RootBeerDetailsPage />} />
               <Route path="/judges" element={<JudgesPage />} />
               <Route path="/judges/:judgeId" element={<JudgeProfilePage />} />
+              <Route path="/stats" element={<ClubStatsPage />} />
               {/* Add catch-all route */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

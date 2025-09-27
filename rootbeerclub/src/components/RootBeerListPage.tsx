@@ -38,8 +38,8 @@ const RootBeerListPage = () => {
   const [updateFormError, setUpdateFormError] = useState<string | null>(null);
   const [updateFormLoading, setUpdateFormLoading] = useState(false);
   // Filtering state
-  const [sortBy, setSortBy] = useState<'name' | 'rating'>('name');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortBy, setSortBy] = useState<'name' | 'rating'>('rating');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterRootbeer, setFilterRootbeer] = useState<'all' | 'rootbeer' | 'notrootbeer' | 'rated'>('all');
 
 

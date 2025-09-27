@@ -41,6 +41,14 @@ const Navigation = () => {
       >
         Judges
       </Link>
+      <Link
+        to="/stats"
+        className={`px-3 py-2 rounded-md text-sm font-medium ${
+          isActive('/stats') ? 'bg-rootbeer-100 text-rootbeer-700' : 'text-gray-700 hover:bg-rootbeer-50'
+        }`}
+      >
+        Stats
+      </Link>
       {user ? (
         <div className="flex items-center space-x-4">
           <span className="text-sm text-gray-700">Hi, {user.firstName}</span>
