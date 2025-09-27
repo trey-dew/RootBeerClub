@@ -41,9 +41,6 @@ interface StatsData {
 }
 
 const ClubStatsPage: React.FC = () => {
-  const [rootbeers, setRootbeers] = useState<RootBeer[]>([]);
-  const [ratings, setRatings] = useState<RatingInfo[]>([]);
-  const [judges, setJudges] = useState<JudgeInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<StatsData>({
@@ -71,21 +68,18 @@ const ClubStatsPage: React.FC = () => {
           ...beer,
           rating: beer.rating !== undefined && beer.rating !== null ? Number(beer.rating) : null
         }));
-        setRootbeers(rootbeersList);
         
         // Fetch all ratings
         const ratingsRes = await fetch(`${API_BASE_URL}/ratings`);
         if (!ratingsRes.ok) throw new Error('Failed to fetch ratings');
         const ratingsData = await ratingsRes.json();
-        setRatings(ratingsData);
         
         // Fetch all judges
         const judgesRes = await fetch(`${API_BASE_URL}/users`);
         if (!judgesRes.ok) throw new Error('Failed to fetch judges');
         const judgesData = await judgesRes.json();
-        setJudges(judgesData);
         
-        // Calculate stats
+        // Calculate stats - directly use the fetched data instead of state
         calculateStats(rootbeersList, ratingsData, judgesData);
       } catch (err) {
         console.error('Error fetching stats data:', err);
