@@ -19,25 +19,6 @@ const pool = new Pool({
     idleTimeoutMillis: 30000,
 })
 
-// Authentication middleware
-const authenticateUser = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        console.log('❌ Authentication failed: No token provided');
-        return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    try {
-        const user = jwt.verify(token, JWT_SECRET);
-        req.user = user;
-        next();
-    } catch (err) {
-        console.log('❌ Authentication failed: Invalid token');
-        return res.status(401).json({ error: 'Invalid token' });
-    }
-};
-
 const app = express()
 
 // Update the CORS configuration
@@ -374,6 +355,25 @@ app.post("/login", async (req, res) => {
     }
 });
 
+// Authentication middleware
+const authenticateUser = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        console.log('❌ Authentication failed: No token provided');
+        return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    try {
+        const user = jwt.verify(token, JWT_SECRET);
+        req.user = user;
+        next();
+    } catch (err) {
+        console.log('❌ Authentication failed: Invalid token');
+        return res.status(401).json({ error: 'Invalid token' });
+    }
+};
+
 // Update /me endpoint to use JWT
 app.get('/me', authenticateUser, (req, res) => {
     console.log('📍 /me endpoint hit');
@@ -469,6 +469,27 @@ app.delete("/ratings/:rating_id", async (req, res) => {
         console.error('Error deleting rating:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
+});
+
+// Add this before other rootbeer routes
+app.get('/api/top-rootbeers', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT rb.rootbeer_id, rb.name, rb.logo, 
+        ROUND(AVG(r.rating)::numeric, 2) as rating,
+        COUNT(r.rating_id) as total_ratings
+       FROM rootbeers rb
+       LEFT JOIN ratings r ON rb.rootbeer_id = r.rootbeer_id
+       GROUP BY rb.rootbeer_id, rb.name, rb.logo
+       HAVING COUNT(r.rating_id) > 0
+       ORDER BY AVG(r.rating) DESC
+       LIMIT 10`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching top rootbeers:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 const PORT = process.env.PORT || 3000

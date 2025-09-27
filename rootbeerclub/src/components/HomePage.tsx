@@ -17,7 +17,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchTopRootBeers = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/rootbeers/top10`);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/top-rootbeers`);
         if (!response.ok) {
           throw new Error('Failed to fetch top root beers');
         }
@@ -87,13 +87,6 @@ const HomePage = () => {
             ))}
           </div>
         )}
-      </div>
-
-      <div className="text-center text-gray-600 text-sm pb-8">
-        <p>
-          Started in 2023 as a family project to find the best root beer. 
-          Built with love for Dad, Grandpa, and Uncle's shared passion for root beer.
-        </p>
       </div>
     </div>
   );
