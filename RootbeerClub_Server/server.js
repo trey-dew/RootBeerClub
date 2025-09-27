@@ -401,6 +401,27 @@ app.get('/ratings/top10', async (req, res) => {
   }
 });
 
+// Get top 10 overall rated rootbeers
+app.get('/rootbeers/top10', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT rb.rootbeer_id, rb.name, rb.logo, 
+        ROUND(AVG(r.rating)::numeric, 2) as rating,
+        COUNT(r.rating_id) as total_ratings
+       FROM rootbeers rb
+       LEFT JOIN ratings r ON rb.rootbeer_id = r.rootbeer_id
+       GROUP BY rb.rootbeer_id, rb.name, rb.logo
+       HAVING COUNT(r.rating_id) > 0
+       ORDER BY AVG(r.rating) DESC
+       LIMIT 10`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching top 10 rootbeers:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // get rating by id
 app.get("/ratings/:rating_id", async (req, res) => {
     try {
