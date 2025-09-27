@@ -4,8 +4,22 @@ const { Pool } = require("pg")
 const jwt = require('jsonwebtoken');
 require('dotenv').config()
 
-// Add JWT secret to your environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// Define middleware first
+const authenticateUser = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    try {
+        const user = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = user;
+        next();
+    } catch (err) {
+        return res.status(401).json({ error: 'Invalid token' });
+    }
+};
 
 // PostgreSQL connection configuration
 const pool = new Pool({
@@ -154,7 +168,7 @@ app.get("/users", async (req, res) => {
 })
 
 // add new rootbeers
-app.post("/rootbeers", async (req, res) => {
+app.post("/rootbeers", authenticateUser, async (req, res) => {
     try {
         const { name, rating, date_tested, logo, nutrition_facts, is_rootbeer, rootbeer_facts} = req.body
         const result = await pool.query('INSERT INTO rootbeers (name, rating, date_tested, logo, nutrition_facts, is_rootbeer, rootbeer_facts) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *', [name, rating, date_tested, logo, nutrition_facts, is_rootbeer, rootbeer_facts])
@@ -334,7 +348,7 @@ app.post("/login", async (req, res) => {
             isAdmin: user.is_admin,
             firstName: user.firstname,
             lastName: user.lastname
-        }, JWT_SECRET, { expiresIn: '24h' });
+        }, process.env.JWT_SECRET, { expiresIn: '24h' });
         
         console.log('✅ Login successful:', { userId: user.user_id });
 
@@ -354,25 +368,6 @@ app.post("/login", async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-
-// Authentication middleware
-const authenticateUser = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        console.log('❌ Authentication failed: No token provided');
-        return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    try {
-        const user = jwt.verify(token, JWT_SECRET);
-        req.user = user;
-        next();
-    } catch (err) {
-        console.log('❌ Authentication failed: Invalid token');
-        return res.status(401).json({ error: 'Invalid token' });
-    }
-};
 
 // Update /me endpoint to use JWT
 app.get('/me', authenticateUser, (req, res) => {
@@ -469,27 +464,6 @@ app.delete("/ratings/:rating_id", async (req, res) => {
         console.error('Error deleting rating:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
-});
-
-// Add this before other rootbeer routes
-app.get('/api/top-rootbeers', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT rb.rootbeer_id, rb.name, rb.logo, 
-        ROUND(AVG(r.rating)::numeric, 2) as rating,
-        COUNT(r.rating_id) as total_ratings
-       FROM rootbeers rb
-       LEFT JOIN ratings r ON rb.rootbeer_id = r.rootbeer_id
-       GROUP BY rb.rootbeer_id, rb.name, rb.logo
-       HAVING COUNT(r.rating_id) > 0
-       ORDER BY AVG(r.rating) DESC
-       LIMIT 10`
-    );
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching top rootbeers:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
 });
 
 const PORT = process.env.PORT || 3000
