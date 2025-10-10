@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useTransition, startTransition } from 'react';
 import { Link } from 'react-router-dom';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -41,9 +41,13 @@ interface StatsData {
 }
 
 const ClubStatsPage: React.FC = () => {
+  // Add isPending state for transitions
+  const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<StatsData>({
+  
+  // Initial optimistic stats (showing placeholders)
+  const initialStats: StatsData = {
     totalRootBeers: 0,
     totalRatings: 0,
     avgRating: 0,
@@ -51,40 +55,118 @@ const ClubStatsPage: React.FC = () => {
     lowestRated: null,
     mostRatings: null,
     judgeStats: [],
-    ratingDistribution: {},
+    ratingDistribution: Object.fromEntries([...Array(11)].map((_, i) => [i.toString(), 0])),
     isRootbeerStats: {rootbeer: 0, notRootbeer: 0}
+  };
+  
+  const [stats, setStats] = useState<StatsData>(initialStats);
+
+  // Add optimistic state for stats that will show while data is loading
+  const [optimisticStats, setOptimisticStats] = useState<StatsData>({
+    ...initialStats,
+    // Show optimistic placeholder data that looks realistic
+    totalRootBeers: 15,
+    totalRatings: 45,
+    avgRating: 7.5,
+    highestRated: {
+      rootbeer_id: 0,
+      name: "Loading...",
+      rating: 9.5,
+      is_rootbeer: true
+    },
+    lowestRated: {
+      rootbeer_id: 0,
+      name: "Loading...",
+      rating: 4.2,
+      is_rootbeer: true
+    },
+    mostRatings: {
+      rootbeer_id: 0,
+      name: "Loading...",
+      rating: 7.8,
+      is_rootbeer: true,
+      count: 4
+    },
+    judgeStats: Array(4).fill(0).map((_, i) => ({
+      user_id: i,
+      firstname: "Judge",
+      lastname: `${i+1}`,
+      avg_rating: 7.0 + (i * 0.5),
+      total_ratings: 10 + i
+    })),
+    ratingDistribution: {
+      "0": 1, "1": 2, "2": 2, "3": 3, "4": 4, 
+      "5": 6, "6": 8, "7": 10, "8": 7, "9": 4, "10": 2
+    },
+    isRootbeerStats: {rootbeer: 12, notRootbeer: 3}
   });
+
+  // Use combined stats for display - real data when loaded, optimistic data during loading
+  const displayStats = loading ? optimisticStats : stats;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         
-        // Fetch all rootbeers
-        const rootbeersRes = await fetch(`${API_BASE_URL}/rootbeers?all=true`);
-        if (!rootbeersRes.ok) throw new Error('Failed to fetch rootbeers');
-        const rootbeersData = await rootbeersRes.json();
-        const rootbeersList = rootbeersData.data.map((beer: any) => ({
-          ...beer,
-          rating: beer.rating !== undefined && beer.rating !== null ? Number(beer.rating) : null
-        }));
+        // Start with optimistic UI
+        startTransition(() => {
+          // This makes any state updates inside have lower priority
+          // and won't block user interactions
+          
+          // Fetch all rootbeers
+          fetch(`${API_BASE_URL}/rootbeers?all=true`)
+            .then(res => {
+              if (!res.ok) throw new Error('Failed to fetch rootbeers');
+              return res.json();
+            })
+            .then(rootbeersData => {
+              const rootbeersList = rootbeersData.data.map((beer: any) => ({
+                ...beer,
+                rating: beer.rating !== undefined && beer.rating !== null ? Number(beer.rating) : null
+              }));
+              
+              // Fetch all ratings
+              fetch(`${API_BASE_URL}/ratings`)
+                .then(res => {
+                  if (!res.ok) throw new Error('Failed to fetch ratings');
+                  return res.json();
+                })
+                .then(ratingsData => {
+                  
+                  // Fetch all judges
+                  fetch(`${API_BASE_URL}/users`)
+                    .then(res => {
+                      if (!res.ok) throw new Error('Failed to fetch judges');
+                      return res.json();
+                    })
+                    .then(judgesData => {
+                      // Calculate stats with real data
+                      calculateStats(rootbeersList, ratingsData, judgesData);
+                      setLoading(false);
+                    })
+                    .catch(err => {
+                      console.error('Error fetching judges:', err);
+                      setError('Failed to load judges');
+                      setLoading(false);
+                    });
+                })
+                .catch(err => {
+                  console.error('Error fetching ratings:', err);
+                  setError('Failed to load ratings');
+                  setLoading(false);
+                });
+            })
+            .catch(err => {
+              console.error('Error fetching rootbeers:', err);
+              setError('Failed to load rootbeers');
+              setLoading(false);
+            });
+        });
         
-        // Fetch all ratings
-        const ratingsRes = await fetch(`${API_BASE_URL}/ratings`);
-        if (!ratingsRes.ok) throw new Error('Failed to fetch ratings');
-        const ratingsData = await ratingsRes.json();
-        
-        // Fetch all judges
-        const judgesRes = await fetch(`${API_BASE_URL}/users`);
-        if (!judgesRes.ok) throw new Error('Failed to fetch judges');
-        const judgesData = await judgesRes.json();
-        
-        // Calculate stats - directly use the fetched data instead of state
-        calculateStats(rootbeersList, ratingsData, judgesData);
       } catch (err) {
         console.error('Error fetching stats data:', err);
         setError('Failed to load statistics');
-      } finally {
         setLoading(false);
       }
     };
@@ -180,63 +262,94 @@ const ClubStatsPage: React.FC = () => {
         Club Statistics
       </h1>
       
-      {/* Overview Stats */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+      {/* Add loading indicator that doesn't block the UI */}
+      {loading && (
+        <div className="fixed top-4 right-4 bg-rootbeer-700 text-white px-4 py-2 rounded-md shadow-lg z-50">
+          Loading statistics...
+        </div>
+      )}
+      
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-8">
+          {error}
+        </div>
+      )}
+      
+      {/* Overview Stats - now using displayStats */}
+      <div className={`bg-white rounded-xl shadow-lg p-6 mb-8 transition-opacity duration-500 ${loading ? 'opacity-80' : 'opacity-100'}`}>
         <h2 className="text-2xl text-rootbeer-700 mb-6 text-center">
           Overview
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-rootbeer-50 p-6 rounded-lg text-center">
-            <p className="text-4xl font-bold text-rootbeer-700 mb-2">{stats.totalRootBeers}</p>
+            <p className="text-4xl font-bold text-rootbeer-700 mb-2">
+              {displayStats.totalRootBeers}
+              {loading && <span className="inline-block ml-2 animate-pulse">*</span>}
+            </p>
             <p className="text-lg text-rootbeer-600">Root Beers</p>
           </div>
           <div className="bg-rootbeer-50 p-6 rounded-lg text-center">
-            <p className="text-4xl font-bold text-rootbeer-700 mb-2">{stats.totalRatings}</p>
+            <p className="text-4xl font-bold text-rootbeer-700 mb-2">
+              {displayStats.totalRatings}
+              {loading && <span className="inline-block ml-2 animate-pulse">*</span>}
+            </p>
             <p className="text-lg text-rootbeer-600">Total Ratings</p>
           </div>
           <div className="bg-rootbeer-50 p-6 rounded-lg text-center">
-            <p className="text-4xl font-bold text-rootbeer-700 mb-2">{stats.avgRating}</p>
+            <p className="text-4xl font-bold text-rootbeer-700 mb-2">
+              {displayStats.avgRating}
+              {loading && <span className="inline-block ml-2 animate-pulse">*</span>}
+            </p>
             <p className="text-lg text-rootbeer-600">Average Rating</p>
           </div>
         </div>
       </div>
       
       {/* Notable Root Beers */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+      <div className={`bg-white rounded-xl shadow-lg p-6 mb-8 transition-opacity duration-500 ${loading ? 'opacity-80' : 'opacity-100'}`}>
         <h2 className="text-2xl text-rootbeer-700 mb-6 text-center">
           Notable Root Beers
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {stats.highestRated && (
+          {displayStats.highestRated && (
             <Link 
-              to={`/rootbeers/${stats.highestRated.rootbeer_id}`}
-              className="bg-rootbeer-50 p-6 rounded-lg text-center hover:bg-rootbeer-100 transition-colors"
+              to={loading ? '#' : `/rootbeers/${displayStats.highestRated.rootbeer_id}`}
+              className={`bg-rootbeer-50 p-6 rounded-lg text-center ${loading ? 'pointer-events-none' : 'hover:bg-rootbeer-100'} transition-colors`}
             >
               <p className="font-medium text-rootbeer-600 mb-2">Highest Rated</p>
-              <p className="text-xl font-bold text-rootbeer-700 mb-1">{stats.highestRated.name}</p>
-              <p className="text-rootbeer-600">{stats.highestRated.rating}</p>
+              <p className="text-xl font-bold text-rootbeer-700 mb-1">
+                {displayStats.highestRated.name}
+                {loading && <span className="inline-block ml-2 animate-pulse">*</span>}
+              </p>
+              <p className="text-rootbeer-600">{displayStats.highestRated.rating}</p>
             </Link>
           )}
           
-          {stats.lowestRated && (
+          {displayStats.lowestRated && (
             <Link 
-              to={`/rootbeers/${stats.lowestRated.rootbeer_id}`}
-              className="bg-rootbeer-50 p-6 rounded-lg text-center hover:bg-rootbeer-100 transition-colors"
+              to={loading ? '#' : `/rootbeers/${displayStats.lowestRated.rootbeer_id}`}
+              className={`bg-rootbeer-50 p-6 rounded-lg text-center ${loading ? 'pointer-events-none' : 'hover:bg-rootbeer-100'} transition-colors`}
             >
               <p className="font-medium text-rootbeer-600 mb-2">Lowest Rated</p>
-              <p className="text-xl font-bold text-rootbeer-700 mb-1">{stats.lowestRated.name}</p>
-              <p className="text-rootbeer-600">{stats.lowestRated.rating}</p>
+              <p className="text-xl font-bold text-rootbeer-700 mb-1">
+                {displayStats.lowestRated.name}
+                {loading && <span className="inline-block ml-2 animate-pulse">*</span>}
+              </p>
+              <p className="text-rootbeer-600">{displayStats.lowestRated.rating}</p>
             </Link>
           )}
           
-          {stats.mostRatings && (
+          {displayStats.mostRatings && (
             <Link 
-              to={`/rootbeers/${stats.mostRatings.rootbeer_id}`}
-              className="bg-rootbeer-50 p-6 rounded-lg text-center hover:bg-rootbeer-100 transition-colors"
+              to={loading ? '#' : `/rootbeers/${displayStats.mostRatings.rootbeer_id}`}
+              className={`bg-rootbeer-50 p-6 rounded-lg text-center ${loading ? 'pointer-events-none' : 'hover:bg-rootbeer-100'} transition-colors`}
             >
               <p className="font-medium text-rootbeer-600 mb-2">Most Reviews</p>
-              <p className="text-xl font-bold text-rootbeer-700 mb-1">{stats.mostRatings.name}</p>
-              <p className="text-rootbeer-600">{stats.mostRatings.count} ratings</p>
+              <p className="text-xl font-bold text-rootbeer-700 mb-1">
+                {displayStats.mostRatings.name}
+                {loading && <span className="inline-block ml-2 animate-pulse">*</span>}
+              </p>
+              <p className="text-rootbeer-600">{displayStats.mostRatings.count} ratings</p>
             </Link>
           )}
         </div>
